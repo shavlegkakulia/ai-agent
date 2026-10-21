@@ -1,6 +1,7 @@
 import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
 import { Injectable } from '@nestjs/common';
 import { createAgent, ReactAgent } from 'langchain';
+import { LangfuseService } from '../langfuse/observability/observability.service';
 import { z } from 'zod';
 
 const SemanticSplitSchema = z.object({
@@ -16,7 +17,7 @@ export class TextSplitterService {
   private readonly semanticSplitAgent: ReactAgent;
   private readonly textSplitter: RecursiveCharacterTextSplitter;
 
-  constructor() {
+  constructor(private readonly langfuseService: LangfuseService) {
     this.semanticSplitAgent = createAgent({
       name: 'SemanticSplitter',
       model: 'gpt-4o',
@@ -59,11 +60,23 @@ export class TextSplitterService {
 
   async semanticSplitDocument(
     document: string,
+    sessionId: string,
+    userId: string,
   ): Promise<{ title: string; content: string }[]> {
     try {
-      const response = await this.semanticSplitAgent.invoke({
-        messages: [{ role: 'user', content: document }],
+      const langfuseHandler = this.langfuseService.createHandler({
+        sessionId,
+        userId,
+        tags: ['document-processing', 'semantic-splitter'],
       });
+      const response = await this.semanticSplitAgent.invoke(
+        {
+          messages: [{ role: 'user', content: document }],
+        },
+        {
+          callbacks: [langfuseHandler],
+        },
+      );
       return response.structuredResponse.chunks;
     } catch (error) {
       console.error('Error semantic splitting document', error);

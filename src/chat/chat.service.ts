@@ -62,6 +62,7 @@ export class ChatService {
     chatId: string,
     message: string,
     role: ChatMessageRole,
+    userId: string,
   ) {
     let agentMessage: Partial<ChatMessage> | null = null;
     let chatMessage: Partial<ChatMessage> | null = null;
@@ -81,6 +82,7 @@ export class ChatService {
       const response = await this.agentService.sendMessage(
         message,
         chatMessage.id,
+        userId,
       );
       agentMessage = await this.prisma.chatMessage.create({
         data: {

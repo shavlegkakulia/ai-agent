@@ -40,11 +40,13 @@ export class ChatController {
   async createChatMessage(
     @Param('chatId') chatId: string,
     @Body() body: { message: string },
+    @Request() req: AuthRequest,
   ) {
     return await this.chatService.createChatMessage(
       chatId,
       body.message,
       ChatMessageRole.USER,
+      req.user.id,
     );
   }
 }

@@ -69,10 +69,4 @@ export class DocumentController {
       body.splitStrategy,
     );
   }
-
-  @Get('pg/doc/:query')
-  searchDocuments(@Param('query') query: string) {
-    console.log(query ?? 'no query');
-    return this.documentService.ftsSearch(query);
-  }
 }

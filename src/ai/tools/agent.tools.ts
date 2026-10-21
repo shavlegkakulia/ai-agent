@@ -11,6 +11,7 @@ import { EmbeddingService } from '../../embedding/embedding.service';
 import { DocumentService } from '../../document/document.service';
 import { fuseSearchResults } from '../../helper/rrf';
 import { buildKnowledgeContextPrompt } from '../promts';
+import { RunnableConfig } from '@langchain/core/runnables';
 
 @Injectable()
 export class AgentTools {
@@ -22,7 +23,9 @@ export class AgentTools {
 
   private getKnowledgeBaseTool() {
     return tool(
-      async (query: { query: string }) => {
+      async (query: { query: string }, config: RunnableConfig) => {
+        const chatId = config.configurable?.thread_id;
+        const userId = config.configurable?.user_id;
         const candidateLimit = 10;
         const finalLimit = 5;
         const queryEmbedding = await this.embeddingService.embedQuery(
@@ -35,7 +38,12 @@ export class AgentTools {
             pgVectorString,
             candidateLimit,
           ),
-          this.documentService.ftsSearch(query.query, candidateLimit),
+          this.documentService.ftsSearch(
+            query.query,
+            candidateLimit,
+            chatId,
+            userId,
+          ),
         ]);
 
         const relevantResults = fuseSearchResults(

@@ -4,9 +4,10 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { MainAgent } from './agent/mian.agent';
 import { ToolModule } from './tool.module';
 import { QueryRewriterModule } from './query-rewriter.module';
+import { ObservabilityModule } from '../langfuse/observability/observability.module';
 
 @Module({
-  imports: [PrismaModule, ToolModule, QueryRewriterModule],
+  imports: [PrismaModule, ToolModule, QueryRewriterModule, ObservabilityModule],
   providers: [AgentService, MainAgent],
   exports: [AgentService, MainAgent],
 })

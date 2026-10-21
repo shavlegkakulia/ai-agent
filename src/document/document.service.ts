@@ -157,8 +157,17 @@ export class DocumentService {
     `;
   }
 
-  async ftsSearch(query: string, limit: number = 5) {
-    const rewrittenQuery = await this.queryRewriterService.rewriteQuery(query);
+  async ftsSearch(
+    query: string,
+    limit: number = 5,
+    chatId: string,
+    userId: string,
+  ) {
+    const rewrittenQuery = await this.queryRewriterService.rewriteQuery(
+      query,
+      chatId,
+      userId,
+    );
     const ftsQuery = buildFtsQuery(rewrittenQuery);
 
     return this.prisma.$queryRaw<

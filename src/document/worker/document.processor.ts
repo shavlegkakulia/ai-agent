@@ -62,12 +62,16 @@ export class DocumentProcessor extends WorkerHost {
     }
 
     let splitChunks: string[] = [];
-    console.log('data.splitStrategy', data.splitStrategy);
+
     if (data.splitStrategy === SplitStrategy.Split) {
       splitChunks = await this.textSplitterService.splitText(document.content);
     } else if (data.splitStrategy === SplitStrategy.Semantic) {
       const semanticChunks =
-        await this.textSplitterService.semanticSplitDocument(document.content);
+        await this.textSplitterService.semanticSplitDocument(
+          document.content,
+          data.documentId,
+          data.userId,
+        );
       console.log('semanticChunks', semanticChunks);
       splitChunks = semanticChunks.map(
         (chunk) => `${chunk.title}\n\n${chunk.content}`,
