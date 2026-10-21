@@ -1,0 +1,147 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+enum DocumentStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum OrderStatus {
+  DELIVERED
+  PENDING
+  CANCELLED
+  REFUNDED
+}
+
+enum ChatMessageRole {
+  USER
+  AGENT
+}
+
+model User {
+  id              String         @id @default(uuid())
+  createdAt       DateTime       @default(now())
+  email           String         @unique
+  name            String?
+  isEmailVerified Boolean        @default(false)
+  last_name       String?
+  password        String
+  refreshTokens    RefreshToken[]
+  documents       Documents[]
+  chunks  DocumentChunks[]
+  customers Customer[]
+  chats Chat[]
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Documents {
+  id        String           @id @default(uuid())
+  title     String
+  content   String
+  userId    String
+  version   Int              @default(1)
+  status    DocumentStatus   @default(PENDING)
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  chunks    DocumentChunks[]
+  outboxEvents OutboxEvents[]
+
+  @@index([userId])
+}
+
+model DocumentChunks {
+  id         String                      @id @default(uuid())
+  content    String
+  userId     String
+  documentId String
+  chunkIndex Int
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document Documents @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  embedding  Unsupported("vector(1536)")
+  createdAt  DateTime                    @default(now())
+  @@index([userId])
+  @@index([documentId])
+  @@unique([documentId, chunkIndex])
+}
+
+model OutboxEvents {
+  id String @id @default(uuid())
+  type String
+  payload Json
+  aggregateId String
+  attempts Int @default(0)
+  createdAt DateTime @default(now())
+  publishedAt DateTime?
+  owner String?
+  ownedAt DateTime?
+  document Documents? @relation(fields: [aggregateId], references: [id], onDelete: Cascade)
+  @@index([createdAt, publishedAt])
+}
+
+model Customer {
+  id String @id @default(uuid())
+  name String
+  phone String
+  address String
+  userId String? @unique
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  orders Order[]
+}
+
+model Product {
+  id String @id @default(uuid())
+  name String
+  price Decimal 
+  stockQuantity Int
+  orders Order[]
+}
+
+model Order {
+  id String @id @default(uuid())
+  customerId String
+  productId String
+  quantity Int
+  status OrderStatus @default(PENDING)
+  createdAt DateTime @default(now())
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model Chat {
+  id String @id @default(uuid())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([userId])
+  messages ChatMessage[]
+}
+
+model ChatMessage {
+  id String @id @default(uuid())
+  chatId String
+  message String
+  role ChatMessageRole
+  chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([chatId])
+}
