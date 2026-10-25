@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { MainAgent } from '../agent/mian.agent';
 import { LangfuseService } from '../../langfuse/observability/observability.service';
+import { ToolMessage } from 'langchain';
 
 @Injectable()
 export class AgentService {
@@ -31,8 +32,24 @@ export class AgentService {
       },
     );
 
-    console.log({ response });
-    const lastMessage = response.messages[response.messages.length - 1];
-    return lastMessage.content;
+    const toolMessages = response.messages.filter(
+      (message): message is ToolMessage => ToolMessage.isInstance(message),
+    );
+
+    const knowledgeBaseMessage = toolMessages.find(
+      (message) => message.name === 'get-knowledge-base',
+    );
+
+    const artifact = knowledgeBaseMessage?.artifact as
+      { chunkIds: string[]; relevantContext: string } | undefined;
+
+    const retrievedChunkIds = artifact?.chunkIds ?? [];
+    const relevantContext = artifact?.relevantContext ?? '';
+
+    return {
+      content: response.messages.at(-1)?.text ?? '',
+      retrievedChunkIds,
+      relevantContext,
+    };
   }
 }

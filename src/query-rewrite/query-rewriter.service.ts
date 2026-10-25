@@ -1,8 +1,8 @@
-import { ChatOpenAI } from '@langchain/openai';
-import { queryRewriterPrompt } from '../promts';
+import { queryRewriterPrompt } from '../ai/promts';
 import { z } from 'zod';
-import { LangfuseService } from '../../langfuse/observability/observability.service';
 import { Injectable } from '@nestjs/common';
+import { QueryRewriteAgent } from '../ai/model/query-rewrite.agent';
+import { LangfuseService } from '../langfuse/observability/observability.service';
 
 const responseSchema = z.object({
   query: z.string(),
@@ -10,25 +10,26 @@ const responseSchema = z.object({
 
 @Injectable()
 export class QueryRewriterService {
-  private readonly queryRewriter: ChatOpenAI;
-  constructor(private readonly langfuseService: LangfuseService) {
-    this.queryRewriter = new ChatOpenAI({
-      model: 'gpt-4o',
-      temperature: 0,
-    });
-  }
+  constructor(
+    private readonly queryRewriteAgent: QueryRewriteAgent,
+    private readonly langfuseService: LangfuseService,
+  ) {}
 
   async rewriteQuery(query: string, chatId: string, userId: string) {
-    const response = this.queryRewriter.withStructuredOutput(responseSchema, {
-      strict: true,
-    });
+    const queryRewriter = this.queryRewriteAgent.agent.withStructuredOutput(
+      responseSchema,
+      {
+        strict: true,
+      },
+    );
 
     const langfuseHandler = this.langfuseService.createHandler({
       sessionId: chatId,
       userId,
       tags: ['query-rewriter'],
     });
-    const result = await response.invoke(
+
+    const result = await queryRewriter.invoke(
       [
         { role: 'user', content: query },
         {

@@ -14,10 +14,28 @@ export class ChunksService {
     });
   }
 
+  getChunksForDocuments(documentIds: string[], userId: string) {
+    return this.prisma.documentChunks.findMany({
+      where: {
+        documentId: { in: documentIds },
+        userId: userId,
+      },
+    });
+  }
+
   getAllChunks(userId: string) {
     return this.prisma.documentChunks.findMany({
       where: {
         userId: userId,
+      },
+    });
+  }
+
+  deleteAllChunks(documentId: string, userId: string) {
+    return this.prisma.documentChunks.deleteMany({
+      where: {
+        userId: userId,
+        documentId: documentId,
       },
     });
   }

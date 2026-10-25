@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { AgentModule } from './ai/agent.module';
+import { AgentModule } from './ai/service/agent-service.module';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { TokensModule } from './tokens/tokens.module';
@@ -14,6 +14,7 @@ import { ThorttlerModule } from './thorttler/thorttler.module';
 import { ChatModule } from './chat/chat.module';
 import { ProductModule } from './product/product.module';
 import { CustomerModule } from './customer/customer.module';
+import { EvalDatasetGenerationModule } from './eval-dataset-generation/eval-dataset-generation.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { CustomerModule } from './customer/customer.module';
     ChatModule,
     ProductModule,
     CustomerModule,
+    EvalDatasetGenerationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

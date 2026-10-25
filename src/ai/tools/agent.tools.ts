@@ -12,6 +12,8 @@ import { DocumentService } from '../../document/document.service';
 import { fuseSearchResults } from '../../helper/rrf';
 import { buildKnowledgeContextPrompt } from '../promts';
 import { RunnableConfig } from '@langchain/core/runnables';
+import { Document } from '@langchain/core/documents';
+import { RerankerAgent } from '../model/reranker.agent';
 
 @Injectable()
 export class AgentTools {
@@ -19,15 +21,19 @@ export class AgentTools {
     private readonly prisma: PrismaClient,
     private readonly embeddingService: EmbeddingService,
     private readonly documentService: DocumentService,
+    private readonly reranker: RerankerAgent,
   ) {}
 
   private getKnowledgeBaseTool() {
     return tool(
       async (query: { query: string }, config: RunnableConfig) => {
+        console.log('KNOWLEDGE TOOL CALLED', {
+          query: query.query,
+        });
         const chatId = config.configurable?.thread_id;
         const userId = config.configurable?.user_id;
-        const candidateLimit = 10;
-        const finalLimit = 5;
+        const candidateLimit = 20;
+        const finalLimit = 15;
         const queryEmbedding = await this.embeddingService.embedQuery(
           query.query ?? '',
         );
@@ -45,22 +51,46 @@ export class AgentTools {
             userId,
           ),
         ]);
-
+        console.log('vectorResults', vectorResults);
+        console.log('ftsResults', ftsResults);
         const relevantResults = fuseSearchResults(
           vectorResults,
           ftsResults,
           finalLimit,
         );
+        console.log('relevantResults', relevantResults);
+        const documents = relevantResults.map(
+          (result) =>
+            new Document({
+              id: result.id,
+              pageContent: result.content,
+              metadata: {},
+            }),
+        );
 
-        if (relevantResults.length === 0) {
-          return {
-            found: false,
-            error: 'No company knowledge base results found',
-          };
+        const reranked = await this.reranker.model.compressDocuments(
+          documents,
+          query.query ?? '',
+        );
+
+        if (reranked.length === 0) {
+          return [
+            {
+              found: false,
+              error: 'No company knowledge base results found',
+            },
+            {
+              chunkIds: [],
+              relevantContext: '',
+              query: query.query ?? '',
+            },
+          ];
         }
 
-        const relevantContext = relevantResults
-          .map((result: any) => result.content)
+        console.log('reranked', reranked);
+
+        const relevantContext = reranked
+          .map((result) => result.pageContent)
           .join('\n-----\n');
 
         const context = buildKnowledgeContextPrompt(
@@ -68,55 +98,49 @@ export class AgentTools {
           query.query ?? '',
         );
 
-        return {
-          found: true,
-          context: context,
-        };
+        return [
+          {
+            found: true,
+            context: context,
+          },
+          {
+            chunkIds: reranked.map((result) => result.id),
+            relevantContext,
+            query: query.query ?? '',
+          },
+        ];
       },
       {
         name: 'get-knowledge-base',
-        description: `Search the company knowledge base for policies, procedures, and business rules.
-
-        Create the search query in the same language as the user's question whenever possible.
+        description: `Use this tool whenever the answer depends on company-specific policies,
+        procedures, business rules, eligibility conditions, timeframes, warranties,
+        delivery rules, returns, refunds, cancellations, privacy rules, or support procedures.
         
-        Preserve all concrete details that may affect which policy applies, including:
+        Do not skip this tool because the answer seems obvious, common sense,
+        or already known. When this tool is required, call it before producing the final answer.
+        
+        Search the company knowledge base using a query that preserves the user's
+        meaning and all details that may affect which rule applies.
+        
+        Preserve relevant details such as:
         - locations
         - numbers
         - time periods
-        - order or product statuses
+        - statuses
         - product types
         - customer intent
-        - conditions and exceptions
+        - conditions
+        - exceptions
         
-        Do not replace a specific user question with a generic topic.
+        Do not replace a specific request with a generic topic.
         Do not omit details that may affect retrieval relevance.
-        Prefer the user's original wording when it is already suitable for semantic search.
-        
-        Use a descriptive semantic query that includes the relevant business context.
-        
-        For example:
-        
-        User:
-        "შეკვეთა რუსთავშია და უკვე 6 სამუშაო დღეა PENDING სტატუსში. ითვლება თუ არა დაგვიანებულად?"
-        
-        Good query:
-        "რუსთავში შეკვეთა 6 სამუშაო დღეა PENDING სტატუსში, მიწოდების ვადა და დაგვიანების პირობები"
-        
-        Bad query:
-        "PENDING სტატუსის შეკვეთის დაგვიანების პირობები"
-        
-        Another example:
-        
-        User:
-        "მიწოდებული პროდუქტი გადაიფიქრა და დაბრუნება უნდა"
-        
-        Good query:
-        "მიწოდებული პროდუქტის დაბრუნების პირობები მომხმარებელმა გადაიფიქრა შეძენა"
-        
+        Prefer the user's original wording when it is already suitable for search.
+        Use the same language as the user's request whenever possible.
         Do not translate a Georgian request into a short English keyword query.`,
         schema: z.object({
           query: z.string().nullable(),
         }),
+        responseFormat: 'content_and_artifact',
       },
     );
   }
@@ -180,7 +204,6 @@ export class AgentTools {
         }
 
         if (name && phone) {
-          console.log('name and phone', name, phone);
           customers = await this.prisma.customer.findMany({
             where: {
               phone: phone,
@@ -188,22 +211,18 @@ export class AgentTools {
             },
           });
         } else if (name) {
-          console.log('name', name);
           customers = await this.prisma.customer.findMany({
             where: {
               OR: [{ name: name }, { name: reorderName }],
             },
           });
         } else if (phone) {
-          console.log('phone', phone);
           customers = await this.prisma.customer.findMany({
             where: {
               phone: phone,
             },
           });
         }
-
-        console.log('customers', customers.length);
 
         if (customers.length === 0) {
           return {

@@ -81,13 +81,13 @@ export class ChatService {
       });
       const response = await this.agentService.sendMessage(
         message,
-        chatMessage.id,
+        chatId,
         userId,
       );
       agentMessage = await this.prisma.chatMessage.create({
         data: {
           chatId,
-          message: response.toString(),
+          message: response.content,
           role: ChatMessageRole.AGENT,
         },
         select: {
@@ -97,7 +97,7 @@ export class ChatService {
         },
       });
       return {
-        agentMessage,
+        agentMessage: agentMessage?.message,
       };
     } catch (error) {
       if (chatMessage) {

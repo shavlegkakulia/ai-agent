@@ -3,7 +3,7 @@ import { DocumentStatus, PrismaClient } from '../generated/prisma/client';
 import { JobName } from './document-queue.contracts';
 import { SplitStrategy } from '../textSplitter/strategies';
 import { buildFtsQuery } from '../helper';
-import { QueryRewriterService } from '../ai/service/query-rewriter.service';
+import { QueryRewriterService } from '../query-rewrite/query-rewriter.service';
 
 const goldenDistanceThreshold = 0.7;
 
@@ -27,6 +27,14 @@ export class DocumentService {
     return this.prisma.documents.findMany({
       where: {
         userId: userId,
+      },
+    });
+  }
+
+  getDocumentsTitles() {
+    return this.prisma.documents.findMany({
+      select: {
+        title: true,
       },
     });
   }

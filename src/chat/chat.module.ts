@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { ChatController } from './chat.controller';
 import { PrismaModule } from '../prisma/prisma.module';
-import { AgentModule } from '../ai/agent.module';
+import { AgentModule } from '../ai/service/agent-service.module';
 
 @Module({
   imports: [PrismaModule, AgentModule],

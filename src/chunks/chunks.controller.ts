@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Request } from '@nestjs/common';
+import { Controller, Delete, Get, Param, Request } from '@nestjs/common';
 import { ChunksService } from './chunks.service';
 import { AuthRequest } from 'types/auth';
 
@@ -17,5 +17,13 @@ export class ChunksController {
   @Get()
   getAllChunks(@Request() req: AuthRequest) {
     return this.chunksService.getAllChunks(req.user.id);
+  }
+
+  @Delete(':documentId')
+  deleteChunks(
+    @Param('documentId') documentId: string,
+    @Request() req: AuthRequest,
+  ) {
+    return this.chunksService.deleteAllChunks(documentId, req.user.id);
   }
 }

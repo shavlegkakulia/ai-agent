@@ -74,13 +74,14 @@ export class DocumentProcessor extends WorkerHost {
         );
       console.log('semanticChunks', semanticChunks);
       splitChunks = semanticChunks.map(
-        (chunk) => `${chunk.title}\n\n${chunk.content}`,
+        (chunk) =>
+          `Chunk title: ${chunk.title.concat(chunk.title.endsWith('.') ? '' : '.')}\n\n  Chunk content: ${chunk.content}`,
       );
     } else {
       splitChunks = [document.content];
     }
     splitChunks = splitChunks.map(
-      (chunk) => `Document title: ${document.title}\n\n${chunk}`,
+      (chunk) => `Document title: ${document.title}\n\n  ${chunk}`,
     );
 
     const embeddings =

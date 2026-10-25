@@ -6,16 +6,16 @@ import { AuthRequest } from 'types/auth';
 export class OutboxController {
   constructor(private readonly outboxService: OutboxService) {}
 
+  @Get('all')
+  getAllOutboxEvents(@Request() req: AuthRequest) {
+    return this.outboxService.getAllOutboxEvents(req.user.id);
+  }
+
   @Get(':documentId')
   getDocumentOutboxEvents(
     @Param('documentId') documentId: string,
     @Request() req: AuthRequest,
   ) {
     return this.outboxService.getDocumentOutboxEvents(documentId, req.user.id);
-  }
-
-  @Get('all')
-  getAllOutboxEvents(@Request() req: AuthRequest) {
-    return this.outboxService.getAllOutboxEvents(req.user.id);
   }
 }
