@@ -40,6 +40,18 @@ export class ChatService {
     });
   }
 
+  async deleteChat(chatId: string, userId: string) {
+    return this.prisma.chat.delete({
+      where: {
+        id: chatId,
+        userId,
+      },
+      select: {
+        id: true,
+      },
+    });
+  }
+
   async getChatMessages(chatId: string, userId: string) {
     return await this.prisma.chatMessage.findMany({
       where: { chatId, chat: { userId } },

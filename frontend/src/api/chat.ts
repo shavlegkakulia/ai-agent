@@ -16,6 +16,12 @@ export function getChat(chatId: string) {
     .then((response) => response.data);
 }
 
+export function deleteChat(chatId: string) {
+  return api
+    .delete<ChatSummary>(`/chat/${encodeURIComponent(chatId)}`)
+    .then((response) => response.data);
+}
+
 export function getChatMessages(chatId: string) {
   return api
     .get<ChatMessage[]>(`/chat/${encodeURIComponent(chatId)}/messages`)

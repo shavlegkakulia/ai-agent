@@ -378,12 +378,29 @@ dd {
   overflow: auto;
 }
 
+.chat-row {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+}
+
 .chat-link {
   width: 100%;
   text-align: left;
   background: #f4f6f8;
   color: #172033;
   border: 1px solid #d9dee7;
+}
+
+.chat-row .chat-link {
+  width: auto;
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-delete {
+  flex: 0 0 auto;
+  padding: 8px;
 }
 
 .chat-link.active {

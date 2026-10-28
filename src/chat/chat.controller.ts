@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Post,
@@ -32,6 +33,15 @@ export class ChatController {
   async getChat(@Param('chatId') chatId: string, @Request() req: AuthRequest) {
     const userId = req.user.id;
     return await this.chatService.getChat(chatId, userId);
+  }
+
+  @Delete(':chatId')
+  async deleteChat(
+    @Param('chatId') chatId: string,
+    @Request() req: AuthRequest,
+  ) {
+    const userId = req.user.id;
+    return await this.chatService.deleteChat(chatId, userId);
   }
 
   @Get(':chatId/messages')
