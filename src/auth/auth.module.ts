@@ -6,7 +6,7 @@ import { UserModule } from '../user/user.module';
 import { PassportModule } from '@nestjs/passport';
 import { LocalStrategy } from './Strategies/local.strategy';
 import { JwtModule } from '@nestjs/jwt';
-import { JwtConstants } from './Constants';
+import { JwtConstants } from './constants';
 import { JwtStrategy } from './Strategies/jwt.strategy';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './Guards/jwt-auth.guard';

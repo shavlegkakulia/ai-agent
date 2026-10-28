@@ -8,4 +8,28 @@ export class CustomerService {
   async getCustomers() {
     return this.prisma.customer.findMany();
   }
+
+  getCustomerRef(phone?: string, email?: string) {
+    return this.prisma.customer.findFirst({
+      where: {
+        ...(phone ? { phone } : {}),
+        ...(email ? { email } : {}),
+      },
+      select: {
+        customerRef: true,
+      },
+    });
+  }
+
+  getCustomerByRef(ref: string) {
+    return this.prisma.customer.findFirst({
+      where: {
+        customerRef: ref,
+      },
+      select: {
+        phone: true,
+        email: true,
+      },
+    });
+  }
 }

@@ -1,6 +1,7 @@
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma/client';
-import { normalizePhoneNumber } from '../src/helper';
+import { normalizeEmail, normalizePhoneNumber } from '../src/helper/factory';
+import { randomUUID } from 'node:crypto';
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
@@ -74,6 +75,8 @@ async function main() {
       name: 'ნიკა ბერიძე',
       phone: normalizePhoneNumber('+995555111222'),
       address: 'თბილისი, ვაჟა-ფშაველას გამზირი 71',
+      email: normalizeEmail('nika.beri@example.com'),
+      customerRef: randomUUID(),
     },
   });
 
@@ -82,6 +85,8 @@ async function main() {
       name: 'მარიამ კაპანაძე',
       phone: normalizePhoneNumber('+995599234567'),
       address: 'თბილისი, პეკინის გამზირი 24',
+      email: normalizeEmail('mariam.kapanadze@example.com'),
+      customerRef: randomUUID(),
     },
   });
 
@@ -90,6 +95,8 @@ async function main() {
       name: 'გიორგი მაისურაძე',
       phone: normalizePhoneNumber('+995577345678'),
       address: 'რუსთავი, მეგობრობის გამზირი 18',
+      email: normalizeEmail('giorgi.maisuradze@example.com'),
+      customerRef: randomUUID(),
     },
   });
 
@@ -98,6 +105,8 @@ async function main() {
       name: 'ანა ლომიძე',
       phone: normalizePhoneNumber('+995568456789'),
       address: 'ქუთაისი, რუსთაველის გამზირი 42',
+      email: normalizeEmail('ana.lomidze@example.com'),
+      customerRef: randomUUID(),
     },
   });
 
@@ -106,6 +115,8 @@ async function main() {
       name: 'ლევან ხუციშვილი',
       phone: normalizePhoneNumber('+995591567890'),
       address: 'ბათუმი, ფარნავაზ მეფის ქუჩა 63',
+      email: normalizeEmail('levan.khutsishvili@example.com'),
+      customerRef: randomUUID(),
     },
   });
 
@@ -114,6 +125,8 @@ async function main() {
       name: 'სალომე ჯაფარიძე',
       phone: normalizePhoneNumber('+995551678901'),
       address: 'თბილისი, ყაზბეგის გამზირი 31',
+      email: normalizeEmail('salome.japaridze@example.com'),
+      customerRef: randomUUID(),
     },
   });
 

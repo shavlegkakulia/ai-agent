@@ -1,9 +1,10 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { createAgent, ReactAgent } from 'langchain';
+import { createAgent, piiMiddleware, ReactAgent } from 'langchain';
 import { mainAgentPrompt } from '../promts';
 import { AgentTools } from '../tools/agent.tools';
 import { PostgresSaver } from '@langchain/langgraph-checkpoint-postgres';
 import { DocumentService } from '../../document/document.service';
+import { PiiMiddlewareFactory } from '../middleware/ppiMidlewareFactory';
 
 @Injectable()
 export class MainAgent implements OnModuleInit {
@@ -13,6 +14,7 @@ export class MainAgent implements OnModuleInit {
   constructor(
     private readonly agentTools: AgentTools,
     private readonly documentService: DocumentService,
+    private readonly piiMiddlewareFactory: PiiMiddlewareFactory,
   ) {
     this.checkPointer = PostgresSaver.fromConnString(process.env.DATABASE_URL);
   }
@@ -44,6 +46,10 @@ export class MainAgent implements OnModuleInit {
       tools: this.agentTools.getAllTools(),
       checkpointer: this.checkPointer,
       systemPrompt: prompt,
+      middleware: [
+        piiMiddleware('credit_card', { strategy: 'block' }),
+        this.piiMiddlewareFactory.createMiddleware(),
+      ],
     });
   }
 

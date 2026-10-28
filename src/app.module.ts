@@ -15,6 +15,7 @@ import { ChatModule } from './chat/chat.module';
 import { ProductModule } from './product/product.module';
 import { CustomerModule } from './customer/customer.module';
 import { EvalDatasetGenerationModule } from './eval-dataset-generation/eval-dataset-generation.module';
+import { PiiModule } from './pii/pii.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { EvalDatasetGenerationModule } from './eval-dataset-generation/eval-data
     ProductModule,
     CustomerModule,
     EvalDatasetGenerationModule,
+    PiiModule,
   ],
   controllers: [AppController],
   providers: [AppService],

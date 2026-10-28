@@ -5,7 +5,8 @@ import {
   serializePgVector,
   normalizeCustomerName,
   normalizePhoneNumber,
-} from '../../helper';
+  normalizeEmail,
+} from '../../helper/factory';
 import { Customer, PrismaClient } from '../../generated/prisma/client';
 import { EmbeddingService } from '../../embedding/embedding.service';
 import { DocumentService } from '../../document/document.service';
@@ -14,6 +15,9 @@ import { buildKnowledgeContextPrompt } from '../promts';
 import { RunnableConfig } from '@langchain/core/runnables';
 import { Document } from '@langchain/core/documents';
 import { RerankerAgent } from '../model/reranker.agent';
+import { PiiService } from '../../pii/pii.service';
+import { CustomerService } from '../../customer/customer.service';
+import { piiEmailPlaceholder, piiPhonePlaceholder } from '../../pii/constant';
 
 @Injectable()
 export class AgentTools {
@@ -22,6 +26,8 @@ export class AgentTools {
     private readonly embeddingService: EmbeddingService,
     private readonly documentService: DocumentService,
     private readonly reranker: RerankerAgent,
+    private readonly piiService: PiiService,
+    private readonly customerService: CustomerService,
   ) {}
 
   private getKnowledgeBaseTool() {
@@ -183,30 +189,48 @@ export class AgentTools {
 
   private getOrderByCustomerTool() {
     return tool(
-      async (data: { customerName?: string; customerPhone?: string }) => {
+      async (data: { customerName?: string; customerRef?: string }) => {
         let name = '';
         let phone = '';
+        let email = '';
         let reorderName = '';
+        console.log('data', data);
         if (data.customerName) {
           name = normalizeCustomerName(data.customerName);
           reorderName = name.split(' ').reverse().join(' ');
         }
-        if (data.customerPhone) {
-          phone = normalizePhoneNumber(data.customerPhone);
+        // If the user message contains a phone placeholder, get the customer by phone
+        if (data.customerRef && this.piiService.isRefPhone(data.customerRef)) {
+          const phoneRef = this.piiService.extractPhoneRef(data.customerRef);
+          const customer =
+            await this.customerService.getCustomerByRef(phoneRef);
+          phone = normalizePhoneNumber(customer.phone);
+        }
+        // If the user message contains an email placeholder, get the customer by email
+        if (data.customerRef && this.piiService.isRefEmail(data.customerRef)) {
+          const emailRef = this.piiService.extractEmailRef(data.customerRef);
+          const customer =
+            await this.customerService.getCustomerByRef(emailRef);
+          email = normalizeEmail(customer.email);
         }
         let customers: Customer[] = [];
 
-        if (!name && !phone) {
+        if (!name && !phone && !email) {
           return {
             found: false,
-            error: 'No customer name or phone provided',
+            error: 'No customer name or phone or email provided',
           };
         }
 
-        if (name && phone) {
+        if (name && (phone || email)) {
+          // If the user message contains a name and phone placeholder, get the customer by name and phone
+          const customer = await this.customerService.getCustomerByRef(
+            data.customerRef,
+          );
           customers = await this.prisma.customer.findMany({
             where: {
-              phone: phone,
+              ...(phone ? { phone: customer.phone } : {}),
+              ...(email ? { email: customer.email } : {}),
               OR: [{ name: name }, { name: reorderName }],
             },
           });
@@ -222,13 +246,19 @@ export class AgentTools {
               phone: phone,
             },
           });
+        } else if (email) {
+          customers = await this.prisma.customer.findMany({
+            where: {
+              email: email,
+            },
+          });
         }
 
         if (customers.length === 0) {
           return {
             found: false,
             error:
-              'Customer not found, please provide valid customer name or phone',
+              'Customer not found, please provide valid customer name or phone or email',
           };
         }
 
@@ -259,10 +289,27 @@ export class AgentTools {
       },
       {
         name: 'get-order-info-by-customer',
-        description:
-          'Get information about an order when the user provides the customer name or phone',
+        description: `
+        Get customer order information when the customer is identified by name
+        or by an internal customer reference placeholder.
+        
+        If the user message contains:
+        [${piiPhonePlaceholder}:<ref>]
+        or
+        [${piiEmailPlaceholder}:<ref>]
+        
+        the user has already provided that identifier.
+        Pass the FULL placeholder exactly as it appears in the message.
+        Do not extract only <ref>.
+        Do not ask the user to provide the phone number or email again.
+        `,
         schema: z.object({
-          customerPhone: z.string().nullable(),
+          customerRef: z
+            .string()
+            .nullable()
+            .describe(
+              `Full placeholder exactly as it appears in the message, e.g. [${piiPhonePlaceholder}:<ref>] or [${piiEmailPlaceholder}:<ref>].`,
+            ),
           customerName: z.string().nullable(),
         }),
       },

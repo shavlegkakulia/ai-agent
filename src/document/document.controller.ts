@@ -12,7 +12,7 @@ import {
 import { DocumentService } from './document.service';
 import { AuthRequest } from 'types/auth';
 import { AuthThrottlerGuard } from '../auth/Guards/Auth-throttler.guard';
-import { SplitStrategy } from '../textSplitter/strategies';
+import { SplitStrategy } from '../textSplitter/constant';
 
 @Controller('document')
 export class DocumentController {

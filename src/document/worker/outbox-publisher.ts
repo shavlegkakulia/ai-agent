@@ -5,7 +5,7 @@ import {
   OnApplicationBootstrap,
   OnApplicationShutdown,
 } from '@nestjs/common';
-import { DocumentProcessorData, QueueName } from '../document-queue.contracts';
+import { DocumentProcessorData, QueueName } from '../contracts';
 import { Queue } from 'bullmq';
 import { PrismaClient } from '../../generated/prisma/client';
 import { randomUUID } from 'node:crypto';

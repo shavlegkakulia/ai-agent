@@ -2,12 +2,16 @@ import { Injectable } from '@nestjs/common';
 import { MainAgent } from '../agent/mian.agent';
 import { LangfuseService } from '../../langfuse/observability/observability.service';
 import { ToolMessage } from 'langchain';
+import { CustomerService } from '../../customer/customer.service';
+import { PiiService } from '../../pii/pii.service';
 
 @Injectable()
 export class AgentService {
   constructor(
     private readonly mainAgent: MainAgent,
     private readonly langfuseService: LangfuseService,
+    private readonly customerService: CustomerService,
+    private readonly piiService: PiiService,
   ) {}
 
   async sendMessage(message: string, chatId: string, userId: string) {
@@ -45,9 +49,32 @@ export class AgentService {
 
     const retrievedChunkIds = artifact?.chunkIds ?? [];
     const relevantContext = artifact?.relevantContext ?? '';
+    let normalizedMessage = response.messages.at(-1)?.text ?? '';
+    const existsPhonePlaceholder =
+      this.piiService.extractPhonePlaceholder(normalizedMessage);
+    const existsEmailPlaceholder =
+      this.piiService.extractEmailPlaceholder(normalizedMessage);
+
+    if (existsPhonePlaceholder) {
+      const phoneRef = this.piiService.extractPhoneRef(normalizedMessage);
+      const reversePii = await this.customerService.getCustomerByRef(phoneRef);
+      normalizedMessage = this.piiService.unmaskPhone(
+        normalizedMessage,
+        reversePii.phone,
+      );
+    }
+
+    if (existsEmailPlaceholder) {
+      const emailRef = this.piiService.extractEmailRef(normalizedMessage);
+      const reversePii = await this.customerService.getCustomerByRef(emailRef);
+      normalizedMessage = this.piiService.unmaskEmail(
+        normalizedMessage,
+        reversePii.email,
+      );
+    }
 
     return {
-      content: response.messages.at(-1)?.text ?? '',
+      content: normalizedMessage,
       retrievedChunkIds,
       relevantContext,
     };

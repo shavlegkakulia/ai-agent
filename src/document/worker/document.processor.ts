@@ -8,8 +8,8 @@ import {
   DocumentProcessorData,
   JobName,
   QueueName,
-} from '../document-queue.contracts';
-import { SplitStrategy } from '../../textSplitter/strategies';
+} from '../contracts';
+import { SplitStrategy } from '../../textSplitter/constant';
 import { TextSplitterService } from '../../textSplitter/text-splitter.service';
 
 @Processor(QueueName.DOCUMENT)

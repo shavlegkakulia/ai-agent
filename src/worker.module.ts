@@ -4,7 +4,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { DocumentProcessor } from './document/worker/document.processor';
 import { DocumentModule } from './document/document.module';
 import { EmbeddingModule } from './embedding/embedding.module';
-import { QueueName } from './document/document-queue.contracts';
+import { QueueName } from './document/contracts';
 import { OutboxPublisher } from './document/worker/outbox-publisher';
 import { TextSplitterModule } from './textSplitter/text-splitter.module';
 

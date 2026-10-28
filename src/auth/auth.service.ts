@@ -7,11 +7,11 @@ import { Prisma } from '../generated/prisma/client';
 import { UserService } from '../user/user.service';
 import { UserDTO } from './dto/auth.dto';
 import { JwtService } from '@nestjs/jwt';
-import { JwtConstants } from './Constants';
+import { JwtConstants } from './constants';
 import { AuthRequest } from 'types/auth';
 import type { SignOptions } from 'jsonwebtoken';
 import { TokensService } from '../tokens/tokens.service';
-import { BcryptCompare, BcryptHash, hashRefreshToken } from './Crypto.utils';
+import { bcryptCompare, bcryptHash, hashString } from '../helper/crypto.utils';
 
 @Injectable()
 export class AuthService {
@@ -24,7 +24,7 @@ export class AuthService {
     try {
       const userData = {
         ...data,
-        password: await BcryptHash(data.password),
+        password: await bcryptHash(data.password),
       };
       const user = await this.userService.create(userData);
       return user;
@@ -52,7 +52,7 @@ export class AuthService {
     if (!refreshToken) {
       throw new UnauthorizedException('Invalid refresh token');
     }
-    const hashedRefreshToken = hashRefreshToken(refreshToken);
+    const hashedRefreshToken = hashString(refreshToken);
     const tokenId = await this.tokensService.findRefreshToken(
       userId,
       hashedRefreshToken,
@@ -71,7 +71,7 @@ export class AuthService {
     if (!refreshToken) {
       throw new UnauthorizedException('Invalid refresh token');
     }
-    const hashedRefreshToken = hashRefreshToken(refreshToken);
+    const hashedRefreshToken = hashString(refreshToken);
     const currentRefreshToken = await this.tokensService.findRefreshToken(
       req.user.id,
       hashedRefreshToken,
@@ -97,7 +97,7 @@ export class AuthService {
       expiresIn: JwtConstants.refreshExpirationTime as SignOptions['expiresIn'],
     });
     const accessToken = this.jwtService.sign(payload);
-    const hashedRefreshToken = hashRefreshToken(refreshToken);
+    const hashedRefreshToken = hashString(refreshToken);
     await this.tokensService.createRefreshToken(user_id, hashedRefreshToken);
     return {
       access_token: accessToken,
@@ -111,7 +111,7 @@ export class AuthService {
       return null;
     }
     const { password: userPassword, ...rest } = user;
-    const isPasswordValid = await BcryptCompare(password, userPassword);
+    const isPasswordValid = await bcryptCompare(password, userPassword);
 
     if (user && isPasswordValid) {
       return rest;

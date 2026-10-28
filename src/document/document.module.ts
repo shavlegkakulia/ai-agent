@@ -3,7 +3,7 @@ import { DocumentService } from './document.service';
 import { DocumentController } from './document.controller';
 import { BullModule } from '@nestjs/bullmq';
 import { PrismaModule } from '../prisma/prisma.module';
-import { QueueName } from './document-queue.contracts';
+import { QueueName } from './contracts';
 import { ThorttlerModule } from '../thorttler/thorttler.module';
 import { QueryRewriterModule } from '../query-rewrite/query-rewriter.module';
 

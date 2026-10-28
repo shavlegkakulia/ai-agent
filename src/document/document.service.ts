@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { DocumentStatus, PrismaClient } from '../generated/prisma/client';
-import { JobName } from './document-queue.contracts';
-import { SplitStrategy } from '../textSplitter/strategies';
-import { buildFtsQuery } from '../helper';
+import { JobName } from './contracts';
+import { SplitStrategy } from '../textSplitter/constant';
+import { buildFtsQuery } from '../helper/factory';
 import { QueryRewriterService } from '../query-rewrite/query-rewriter.service';
 
 const goldenDistanceThreshold = 0.7;

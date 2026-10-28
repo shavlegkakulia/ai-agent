@@ -6,6 +6,9 @@ import { QueryRewriterModule } from '../../query-rewrite/query-rewriter.module';
 import { ObservabilityModule } from '../../langfuse/observability/observability.module';
 import { ToolModule } from '../tools/tool.module';
 import { DocumentModule } from '../../document/document.module';
+import { PiiMiddlewareFactory } from '../middleware/ppiMidlewareFactory';
+import { CustomerModule } from '../../customer/customer.module';
+import { PiiModule } from '../../pii/pii.module';
 
 @Module({
   imports: [
@@ -14,8 +17,10 @@ import { DocumentModule } from '../../document/document.module';
     QueryRewriterModule,
     ObservabilityModule,
     DocumentModule,
+    CustomerModule,
+    PiiModule,
   ],
-  providers: [AgentService, MainAgent],
+  providers: [AgentService, MainAgent, PiiMiddlewareFactory],
   exports: [AgentService, MainAgent],
 })
 export class AgentModule {}

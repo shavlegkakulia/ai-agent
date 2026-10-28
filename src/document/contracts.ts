@@ -1,4 +1,4 @@
-import { SplitStrategy } from '../textSplitter/strategies';
+import { SplitStrategy } from '../textSplitter/constant';
 
 export enum QueueName {
   DOCUMENT = 'document',

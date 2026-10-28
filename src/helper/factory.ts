@@ -1,4 +1,7 @@
-function normalizePhoneNumber(phoneNumber: string) {
+function normalizePhoneNumber(phoneNumber?: string) {
+  if (!phoneNumber) {
+    return '';
+  }
   let value = phoneNumber.replace(/\D/g, '');
 
   if (value.startsWith('995')) {
@@ -10,6 +13,13 @@ function normalizePhoneNumber(phoneNumber: string) {
   }
 
   return value;
+}
+
+function normalizeEmail(email?: string) {
+  if (!email) {
+    return '';
+  }
+  return email.toLowerCase().trim().replace(/\s+/g, ' ');
 }
 
 function normalizeCustomerName(customerName: string) {
@@ -36,6 +46,7 @@ function buildFtsQuery(query: string): string {
 
 export {
   normalizePhoneNumber,
+  normalizeEmail,
   normalizeCustomerName,
   serializePgVector,
   buildFtsQuery,

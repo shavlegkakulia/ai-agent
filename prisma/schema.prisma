@@ -100,7 +100,9 @@ model Customer {
   id String @id @default(uuid())
   name String
   phone String
+  email String?
   address String
+  customerRef     String? @unique
   userId String? @unique
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
   orders Order[]
