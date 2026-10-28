@@ -4,7 +4,7 @@ import '../../src/instrumentation';
 import { LangfuseClient } from '@langfuse/client';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../../src/app.module';
-import { AgentService } from '../../src/ai/service/agent.service';
+import { ChatService } from '../../src/chat/chat.service';
 import { randomUUID } from 'crypto';
 import type { Evaluator } from '@langfuse/client';
 
@@ -139,7 +139,7 @@ const client = new LangfuseClient();
 
 async function supportAgentExperiment() {
   const app = await NestFactory.createApplicationContext(AppModule);
-  const agentService = app.get(AgentService);
+  const chatService = app.get(ChatService);
   const ds = await client.dataset.get('support-agent');
   const userId = process.env.LANGFUSE_EVAL_USER_ID;
 
@@ -156,7 +156,7 @@ async function supportAgentExperiment() {
           caseId: string;
         };
         const sessionId = `eval-${randomUUID()}-${metadata.caseId}`;
-        const output = await agentService.sendMessage(
+        const output = await chatService.runExperiment(
           input.question,
           sessionId, //session id
           userId, //user id

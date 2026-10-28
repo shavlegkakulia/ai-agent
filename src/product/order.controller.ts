@@ -7,7 +7,6 @@ export class OrderController {
 
   @Get()
   async getAllOrders() {
-    console.log('getAllOrders');
     return await this.productService.getAllOrders();
   }
 

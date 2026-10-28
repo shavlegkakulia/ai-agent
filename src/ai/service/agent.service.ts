@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { MainAgent } from '../agent/mian.agent';
 import { LangfuseService } from '../../langfuse/observability/observability.service';
-import { ToolMessage } from 'langchain';
 import { CustomerService } from '../../customer/customer.service';
 import { PiiService } from '../../pii/pii.service';
 
@@ -14,7 +13,7 @@ export class AgentService {
     private readonly piiService: PiiService,
   ) {}
 
-  async sendMessage(message: string, chatId: string, userId: string) {
+  async *streamMessage(message: string, chatId: string, userId: string) {
     const config = {
       configurable: {
         thread_id: chatId,
@@ -22,11 +21,12 @@ export class AgentService {
       },
     };
     const langfuseHandler = this.langfuseService.createHandler({
+      version: '2',
       sessionId: chatId,
       userId,
       tags: ['agent-message'],
     });
-    const response = await this.mainAgent.agent.invoke(
+    const response = await this.mainAgent.agent.streamEvents(
       {
         messages: [{ role: 'user', content: message }],
       },
@@ -35,21 +35,50 @@ export class AgentService {
         callbacks: [langfuseHandler],
       },
     );
+    let finalText = '';
+    let chunkIds: string[] = [];
+    let relevantContext: string = '';
+    for await (const event of response) {
+      if (event.event === 'on_chat_model_stream') {
+        const text = event.data.chunk?.test;
+        if (text) {
+          finalText += text;
+        }
 
-    const toolMessages = response.messages.filter(
-      (message): message is ToolMessage => ToolMessage.isInstance(message),
-    );
+        yield {
+          type: 'token',
+          content: text,
+        };
+      }
 
-    const knowledgeBaseMessage = toolMessages.find(
-      (message) => message.name === 'get-knowledge-base',
-    );
+      if (
+        event.event === 'on_tool_end' &&
+        event.name === 'get-knowledge-base'
+      ) {
+        const artifact = event.data.output?.artifact as
+          | {
+              chunkIds: string[];
+              relevantContext: string;
+            }
+          | undefined;
 
-    const artifact = knowledgeBaseMessage?.artifact as
-      { chunkIds: string[]; relevantContext: string } | undefined;
+        if (artifact) {
+          chunkIds = artifact.chunkIds;
+          relevantContext = artifact.relevantContext;
+        }
+      }
+    }
+    const normalizedMessage = await this.normalizeResponse(finalText);
+    yield {
+      type: 'done',
+      content: normalizedMessage,
+      chunkIds,
+      relevantContext,
+    };
+  }
 
-    const retrievedChunkIds = artifact?.chunkIds ?? [];
-    const relevantContext = artifact?.relevantContext ?? '';
-    let normalizedMessage = response.messages.at(-1)?.text ?? '';
+  private async normalizeResponse(message: string) {
+    let normalizedMessage = message;
     const existsPhonePlaceholder =
       this.piiService.extractPhonePlaceholder(normalizedMessage);
     const existsEmailPlaceholder =
@@ -73,10 +102,6 @@ export class AgentService {
       );
     }
 
-    return {
-      content: normalizedMessage,
-      retrievedChunkIds,
-      relevantContext,
-    };
+    return normalizedMessage;
   }
 }

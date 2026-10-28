@@ -1,9 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {
-  ChatMessage,
-  ChatMessageRole,
-  PrismaClient,
-} from '../generated/prisma/client';
+import { ChatMessageRole, PrismaClient } from '../generated/prisma/client';
 import { AgentService } from '../ai/service/agent.service';
 
 @Injectable()
@@ -58,54 +54,60 @@ export class ChatService {
     });
   }
 
-  async createChatMessage(
+  async *createChatMessageStream(
     chatId: string,
     message: string,
     role: ChatMessageRole,
     userId: string,
   ) {
-    let agentMessage: Partial<ChatMessage> | null = null;
-    let chatMessage: Partial<ChatMessage> | null = null;
-    try {
-      chatMessage = await this.prisma.chatMessage.create({
-        data: {
-          chatId,
-          message,
-          role,
-        },
-        select: {
-          id: true,
-          message: true,
-          role: true,
-        },
-      });
-      const response = await this.agentService.sendMessage(
-        message,
+    await this.prisma.chatMessage.create({
+      data: {
         chatId,
-        userId,
-      );
-      agentMessage = await this.prisma.chatMessage.create({
-        data: {
-          chatId,
-          message: response.content,
-          role: ChatMessageRole.AGENT,
-        },
-        select: {
-          id: true,
-          message: true,
-          role: true,
-        },
-      });
-      return {
-        agentMessage: agentMessage?.message,
-      };
-    } catch (error) {
-      if (chatMessage) {
-        await this.prisma.chatMessage.delete({
-          where: { id: chatMessage.id },
+        message,
+        role,
+      },
+    });
+
+    for await (const event of this.agentService.streamMessage(
+      message,
+      chatId,
+      userId,
+    )) {
+      if (event.type === 'done') {
+        await this.prisma.chatMessage.create({
+          data: {
+            chatId,
+            message: event.content,
+            role: ChatMessageRole.AGENT,
+          },
         });
       }
-      throw error;
+
+      yield event;
     }
+  }
+
+  async runExperiment(message: string, chatId: string, userId: string) {
+    let finalResult = null;
+    let chunkIds: string[] = [];
+    let relevantContext: string = '';
+
+    for await (const event of this.agentService.streamMessage(
+      message,
+      chatId,
+      userId,
+    )) {
+      if (event.type === 'done') {
+        finalResult = event.content;
+        chunkIds = event.chunkIds;
+        relevantContext = event.relevantContext;
+      }
+    }
+
+    return {
+      content: finalResult,
+      chunkIds,
+      relevantContext,
+    };
   }
 }

@@ -1,7 +1,16 @@
-import { Body, Controller, Get, Param, Post, Request } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Request,
+  Res,
+} from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { AuthRequest } from 'types/auth';
 import { ChatMessageRole } from '../generated/prisma/client';
+import { Response } from 'express';
 
 @Controller('chat')
 export class ChatController {
@@ -22,9 +31,7 @@ export class ChatController {
   @Get(':chatId')
   async getChat(@Param('chatId') chatId: string, @Request() req: AuthRequest) {
     const userId = req.user.id;
-    const chat = await this.chatService.getChat(chatId, userId);
-    console.log(chat, chatId);
-    return chat;
+    return await this.chatService.getChat(chatId, userId);
   }
 
   @Get(':chatId/messages')
@@ -41,12 +48,15 @@ export class ChatController {
     @Param('chatId') chatId: string,
     @Body() body: { message: string },
     @Request() req: AuthRequest,
+    @Res() res: Response,
   ) {
-    return await this.chatService.createChatMessage(
+    for await (const event of this.chatService.createChatMessageStream(
       chatId,
       body.message,
       ChatMessageRole.USER,
       req.user.id,
-    );
+    )) {
+      res.write(`data: ${JSON.stringify(event)}\n\n`);
+    }
   }
 }
