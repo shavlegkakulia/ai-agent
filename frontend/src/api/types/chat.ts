@@ -14,6 +14,14 @@ export type CreateChatMessageRequest = {
   message: string;
 };
 
-export type CreateChatMessageResponse = {
-  agentMessage?: string;
-};
+export type AgentStreamEvent =
+  | {
+      type: 'token';
+      content: string;
+    }
+  | {
+      type: 'done';
+      content: string;
+      chunkIds: string[];
+      relevantContext: string;
+    };

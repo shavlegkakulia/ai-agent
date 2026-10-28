@@ -6,7 +6,19 @@ export type ApiErrorInfo = {
   endpoint?: string;
 };
 
-function messageFromData(data: unknown): string | null {
+export class ApiRequestError extends Error {
+  status?: number;
+  endpoint?: string;
+
+  constructor(message: string, status?: number, endpoint?: string) {
+    super(message);
+    this.name = 'ApiRequestError';
+    this.status = status;
+    this.endpoint = endpoint;
+  }
+}
+
+export function messageFromData(data: unknown): string | null {
   if (typeof data === 'string') {
     const trimmed = data.trim();
     if (!trimmed) return null;
@@ -31,6 +43,14 @@ function messageFromData(data: unknown): string | null {
 }
 
 export function toApiError(error: unknown): ApiErrorInfo {
+  if (error instanceof ApiRequestError) {
+    return {
+      status: error.status,
+      message: error.message,
+      endpoint: error.endpoint,
+    };
+  }
+
   if (axios.isAxiosError(error)) {
     const axiosError = error as AxiosError;
     const method = axiosError.config?.method?.toUpperCase();

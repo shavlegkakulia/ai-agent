@@ -40,7 +40,7 @@ export class AgentService {
     let relevantContext: string = '';
     for await (const event of response) {
       if (event.event === 'on_chat_model_stream') {
-        const text = event.data.chunk?.test;
+        const text = event.data.chunk?.text;
         if (text) {
           finalText += text;
         }

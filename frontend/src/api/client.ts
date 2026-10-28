@@ -46,6 +46,35 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+export function getApiBaseUrl() {
+  return baseURL;
+}
+
+export async function authorizedFetch(url: string, init: RequestInit = {}) {
+  const send = (token: string | null) => {
+    const headers = new Headers(init.headers);
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+    return fetch(url, { ...init, headers });
+  };
+
+  const response = await send(getAccessToken());
+  if (response.status !== 401) {
+    return response;
+  }
+
+  await response.body?.cancel();
+  const nextToken = await refreshAccessToken();
+  if (!nextToken) {
+    clearTokens();
+    redirectToLogin();
+    return response;
+  }
+
+  return send(nextToken);
+}
+
 function redirectToLogin() {
   if (
     window.location.pathname !== '/login' &&

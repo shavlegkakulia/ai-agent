@@ -1,20 +1,42 @@
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type KeyboardEvent,
+} from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
-import { getChat, getChatMessages, sendChatMessage } from '../api/chat';
+import { getChat, getChatMessages, streamChatMessage } from '../api/chat';
 import { queryKeys } from '../api/queryKeys';
+import type { AgentStreamEvent } from '../api/types/chat';
 import { ApiError } from '../components/ApiError/ApiError';
 import { ChatList } from '../components/ChatList/ChatList';
 import { Loading } from '../components/Loading/Loading';
 import { RawJson } from '../components/RawJson/RawJson';
 
+type LiveReply = {
+  chatId: string;
+  userText: string;
+  agentText: string;
+  streaming: boolean;
+  error: unknown;
+};
+
+function isAbortError(error: unknown) {
+  return error instanceof DOMException && error.name === 'AbortError';
+}
+
 export function ChatPage() {
   const { chatId = '' } = useParams();
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState('');
-  const [pendingText, setPendingText] = useState<string | null>(null);
+  const [liveReply, setLiveReply] = useState<LiveReply | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const chatIdRef = useRef(chatId);
+  const abortRef = useRef<AbortController | null>(null);
+  const pendingTokensRef = useRef('');
+  const frameRef = useRef<number | null>(null);
   chatIdRef.current = chatId;
 
   const chatQuery = useQuery({
@@ -27,40 +49,127 @@ export function ChatPage() {
     queryFn: () => getChatMessages(chatId),
     enabled: Boolean(chatId) && Boolean(chatQuery.data),
   });
-  const sendMutation = useMutation({
-    mutationFn: (input: { chatId: string; message: string }) =>
-      sendChatMessage(input.chatId, input.message),
-    onMutate: (input) => {
-      setPendingText(input.message);
-      setDraft('');
-    },
-    onSuccess: async (_data, input) => {
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.chatMessages(input.chatId),
-      });
-      if (chatIdRef.current === input.chatId) {
-        setPendingText(null);
-      }
-    },
-    onError: (_error, input) => {
-      if (chatIdRef.current !== input.chatId) return;
-      setPendingText(null);
-      setDraft(input.message);
-    },
-  });
+
+  const takePendingTokens = () => {
+    if (frameRef.current != null) {
+      cancelAnimationFrame(frameRef.current);
+      frameRef.current = null;
+    }
+    const chunk = pendingTokensRef.current;
+    pendingTokensRef.current = '';
+    return chunk;
+  };
+
+  const flushPendingTokens = (replyChatId: string) => {
+    const chunk = takePendingTokens();
+    if (!chunk || chatIdRef.current !== replyChatId) return;
+    setLiveReply((current) => {
+      if (!current || current.chatId !== replyChatId) return current;
+      return { ...current, agentText: current.agentText + chunk };
+    });
+  };
 
   useEffect(() => {
     setDraft('');
-    setPendingText(null);
+    setLiveReply(null);
+    return () => {
+      abortRef.current?.abort();
+      if (frameRef.current != null) {
+        cancelAnimationFrame(frameRef.current);
+        frameRef.current = null;
+      }
+      pendingTokensRef.current = '';
+    };
   }, [chatId]);
+
+  const messages = messagesQuery.data ?? [];
+  const activeReply = liveReply?.chatId === chatId ? liveReply : null;
+  const previous = messages.at(-2);
+  const last = messages.at(-1);
+  const agentAlreadyListed =
+    activeReply != null &&
+    last?.role === 'AGENT' &&
+    last.message === activeReply.agentText &&
+    previous?.role === 'USER' &&
+    previous.message === activeReply.userText;
+  const userAlreadyListed =
+    agentAlreadyListed ||
+    (last?.role === 'USER' && last.message === activeReply?.userText);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messagesQuery.data, pendingText, sendMutation.isPending]);
+  }, [messages, activeReply?.agentText, activeReply?.userText]);
 
   const submit = () => {
-    if (!draft.trim() || sendMutation.isPending || !chatQuery.data) return;
-    sendMutation.mutate({ chatId, message: draft });
+    const message = draft;
+    if (!message.trim() || activeReply?.streaming || !chatQuery.data) return;
+
+    takePendingTokens();
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const replyChatId = chatId;
+
+    setDraft('');
+    setLiveReply({
+      chatId: replyChatId,
+      userText: message,
+      agentText: '',
+      streaming: true,
+      error: null,
+    });
+
+    const onEvent = (event: AgentStreamEvent) => {
+      if (chatIdRef.current !== replyChatId) return;
+      if (event.type === 'token') {
+        pendingTokensRef.current += event.content;
+        if (frameRef.current != null) return;
+        frameRef.current = requestAnimationFrame(() => {
+          const chunk = takePendingTokens();
+          if (!chunk || chatIdRef.current !== replyChatId) return;
+          setLiveReply((current) => {
+            if (!current || current.chatId !== replyChatId) return current;
+            return { ...current, agentText: current.agentText + chunk };
+          });
+        });
+        return;
+      }
+
+      flushPendingTokens(replyChatId);
+      setLiveReply((current) => {
+        if (!current || current.chatId !== replyChatId) return current;
+        return { ...current, agentText: event.content, streaming: false };
+      });
+    };
+
+    void streamChatMessage(replyChatId, message, onEvent, controller.signal)
+      .then(async () => {
+        await queryClient.invalidateQueries({
+          queryKey: queryKeys.chatMessages(replyChatId),
+        });
+        if (chatIdRef.current !== replyChatId) return;
+        setLiveReply((current) =>
+          current?.chatId === replyChatId ? null : current,
+        );
+      })
+      .catch(async (error: unknown) => {
+        if (isAbortError(error) || controller.signal.aborted) {
+          if (abortRef.current === controller) takePendingTokens();
+          return;
+        }
+        flushPendingTokens(replyChatId);
+        if (chatIdRef.current === replyChatId) {
+          setLiveReply((current) =>
+            current?.chatId === replyChatId
+              ? { ...current, streaming: false, error }
+              : current,
+          );
+          setDraft(message);
+        }
+        await queryClient.invalidateQueries({
+          queryKey: queryKeys.chatMessages(replyChatId),
+        });
+      });
   };
 
   const onSubmit = (event: FormEvent) => {
@@ -75,8 +184,6 @@ export function ChatPage() {
     }
   };
 
-  const messages = messagesQuery.data ?? [];
-
   return (
     <div className="chat-page">
       <ChatList />
@@ -90,16 +197,24 @@ export function ChatPage() {
 
         <div className="messages">
           {chatQuery.isPending && <Loading />}
-          <ApiError error={chatQuery.error} onRetry={() => chatQuery.refetch()} />
+          <ApiError
+            error={chatQuery.error}
+            onRetry={() => chatQuery.refetch()}
+          />
           {chatQuery.isSuccess && !chatQuery.data && <p>Chat not found.</p>}
-          {chatQuery.data && messagesQuery.isPending && <Loading label="Loading messages…" />}
+          {chatQuery.data && messagesQuery.isPending && (
+            <Loading label="Loading messages…" />
+          )}
           <ApiError
             error={messagesQuery.error}
             onRetry={() => messagesQuery.refetch()}
           />
-          {chatQuery.data && messagesQuery.isSuccess && messages.length === 0 && !pendingText && (
-            <p className="muted">No messages yet. Send one below.</p>
-          )}
+          {chatQuery.data &&
+            messagesQuery.isSuccess &&
+            messages.length === 0 &&
+            !activeReply && (
+              <p className="muted">No messages yet. Send one below.</p>
+            )}
           {messages.map((message) => {
             const side = message.role === 'USER' ? 'user' : 'agent';
             return (
@@ -111,25 +226,34 @@ export function ChatPage() {
               </div>
             );
           })}
-          {pendingText && (
+          {activeReply && !userAlreadyListed && (
             <div className="bubble-row user">
               <div className="bubble bubble-user">
                 <div className="bubble-role">USER</div>
-                {pendingText}
+                {activeReply.userText}
               </div>
             </div>
           )}
-          {sendMutation.isPending && (
-            <div className="bubble-row agent">
-              <div className="bubble bubble-agent">Agent is responding…</div>
-            </div>
-          )}
+          {activeReply &&
+            !agentAlreadyListed &&
+            (activeReply.streaming || activeReply.agentText) && (
+              <div className="bubble-row agent">
+                <div className="bubble bubble-agent">
+                  <div className="bubble-role">AGENT</div>
+                  {activeReply.streaming && !activeReply.agentText ? (
+                    <span className="muted">Thinking…</span>
+                  ) : (
+                    activeReply.agentText
+                  )}
+                </div>
+              </div>
+            )}
           <div ref={bottomRef} />
         </div>
 
         {chatQuery.data && (
           <form className="composer" onSubmit={onSubmit}>
-            <ApiError error={sendMutation.error} />
+            <ApiError error={activeReply?.error} />
             <div className="composer-row">
               <textarea
                 rows={3}
@@ -137,10 +261,13 @@ export function ChatPage() {
                 placeholder="Message"
                 onChange={(event) => setDraft(event.target.value)}
                 onKeyDown={onKeyDown}
-                disabled={sendMutation.isPending}
+                disabled={Boolean(activeReply?.streaming)}
               />
-              <button type="submit" disabled={sendMutation.isPending || !draft.trim()}>
-                {sendMutation.isPending ? 'Sending…' : 'Send'}
+              <button
+                type="submit"
+                disabled={Boolean(activeReply?.streaming) || !draft.trim()}
+              >
+                Send
               </button>
             </div>
             <p className="hint">Enter sends. Shift+Enter adds a new line.</p>
