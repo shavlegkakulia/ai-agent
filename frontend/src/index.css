@@ -34,6 +34,11 @@ p {
   min-height: 100vh;
 }
 
+.app-shell:has(.chat-page) {
+  height: 100vh;
+  overflow: hidden;
+}
+
 .sidebar {
   width: 230px;
   flex-shrink: 0;
@@ -72,6 +77,11 @@ p {
   flex-direction: column;
 }
 
+.main:has(.chat-page) {
+  min-height: 0;
+  overflow: hidden;
+}
+
 .topbar {
   height: 52px;
   display: flex;
@@ -91,6 +101,7 @@ p {
 .content:has(.chat-page) {
   padding: 0;
   display: flex;
+  overflow: hidden;
 }
 
 .page {
@@ -317,8 +328,9 @@ dd {
 .chat-page {
   display: flex;
   flex: 1;
-  min-height: calc(100vh - 52px);
+  min-height: 0;
   min-width: 0;
+  overflow: hidden;
 }
 
 .chat-list {
@@ -328,6 +340,13 @@ dd {
   background: white;
   padding: 12px;
   overflow: auto;
+}
+
+.chat-page .chat-list {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .chats-index .chat-list {
@@ -353,6 +372,12 @@ dd {
   gap: 6px;
 }
 
+.chat-page .chat-links {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
 .chat-link {
   width: 100%;
   text-align: left;
@@ -369,9 +394,10 @@ dd {
 .chat-thread {
   flex: 1;
   min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh - 52px);
+  overflow: hidden;
 }
 
 .chat-thread-header {
@@ -382,6 +408,7 @@ dd {
 
 .messages {
   flex: 1;
+  min-height: 0;
   overflow: auto;
   padding: 16px;
   display: flex;
