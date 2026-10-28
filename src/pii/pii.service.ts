@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { emailRegex, phoneRegex } from 'constant/regex';
+import { emailRegex, phoneRegex } from '../../constant/regex';
 import { piiEmailPlaceholder, piiPhonePlaceholder } from './constant';
 
 @Injectable()

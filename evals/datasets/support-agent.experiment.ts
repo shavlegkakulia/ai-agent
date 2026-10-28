@@ -161,7 +161,7 @@ async function supportAgentExperiment() {
           sessionId, //session id
           userId, //user id
         );
-
+        console.log('output==========+++++++++++++++++++++++++', output);
         return output;
       },
       evaluators: [

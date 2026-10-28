@@ -33,9 +33,6 @@ export class AgentTools {
   private getKnowledgeBaseTool() {
     return tool(
       async (query: { query: string }, config: RunnableConfig) => {
-        console.log('KNOWLEDGE TOOL CALLED', {
-          query: query.query,
-        });
         const chatId = config.configurable?.thread_id;
         const userId = config.configurable?.user_id;
         const candidateLimit = 20;
@@ -57,14 +54,13 @@ export class AgentTools {
             userId,
           ),
         ]);
-        console.log('vectorResults', vectorResults);
-        console.log('ftsResults', ftsResults);
+
         const relevantResults = fuseSearchResults(
           vectorResults,
           ftsResults,
           finalLimit,
         );
-        console.log('relevantResults', relevantResults);
+
         const documents = relevantResults.map(
           (result) =>
             new Document({
@@ -92,8 +88,6 @@ export class AgentTools {
             },
           ];
         }
-
-        console.log('reranked', reranked);
 
         const relevantContext = reranked
           .map((result) => result.pageContent)
@@ -194,7 +188,7 @@ export class AgentTools {
         let phone = '';
         let email = '';
         let reorderName = '';
-        console.log('data', data);
+
         if (data.customerName) {
           name = normalizeCustomerName(data.customerName);
           reorderName = name.split(' ').reverse().join(' ');

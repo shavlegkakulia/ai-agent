@@ -89,7 +89,7 @@ export class ChatService {
 
   async runExperiment(message: string, chatId: string, userId: string) {
     let finalResult = null;
-    let chunkIds: string[] = [];
+    let retrievedChunkIds: string[] = [];
     let relevantContext: string = '';
 
     for await (const event of this.agentService.streamMessage(
@@ -99,14 +99,14 @@ export class ChatService {
     )) {
       if (event.type === 'done') {
         finalResult = event.content;
-        chunkIds = event.chunkIds;
+        retrievedChunkIds = event.chunkIds;
         relevantContext = event.relevantContext;
       }
     }
 
     return {
       content: finalResult,
-      chunkIds,
+      retrievedChunkIds,
       relevantContext,
     };
   }

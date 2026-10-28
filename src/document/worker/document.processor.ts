@@ -4,11 +4,7 @@ import { DocumentService } from '../document.service';
 import { EmbeddingService } from '../../embedding/embedding.service';
 import { DocumentStatus, PrismaClient } from '../../generated/prisma/client';
 import { randomUUID } from 'node:crypto';
-import {
-  DocumentProcessorData,
-  JobName,
-  QueueName,
-} from '../contracts';
+import { DocumentProcessorData, JobName, QueueName } from '../contracts';
 import { SplitStrategy } from '../../textSplitter/constant';
 import { TextSplitterService } from '../../textSplitter/text-splitter.service';
 
@@ -72,7 +68,7 @@ export class DocumentProcessor extends WorkerHost {
           data.documentId,
           data.userId,
         );
-      console.log('semanticChunks', semanticChunks);
+
       splitChunks = semanticChunks.map(
         (chunk) =>
           `Chunk title: ${chunk.title.concat(chunk.title.endsWith('.') ? '' : '.')}\n\n  Chunk content: ${chunk.content}`,
@@ -154,7 +150,6 @@ export class DocumentProcessor extends WorkerHost {
     const { data, name } = job;
 
     if (name === JobName.PROCESS_DOCUMENT) {
-      console.log('chunkDocument count', this.count++);
       return this.chunkDocument(data);
     } else if (name === JobName.UPDATE_DOCUMENT) {
       return this.chunkDocument(data, 'update');
@@ -169,7 +164,6 @@ export class DocumentProcessor extends WorkerHost {
   ) {
     const isUnrecoverable = error instanceof UnrecoverableError;
     const maxAttempts = job.opts.attempts ?? 1;
-    console.log('onFailed count', error);
     if (job.attemptsMade >= maxAttempts || isUnrecoverable) {
       await this.prisma.documents.updateMany({
         where: { id: job.data.documentId, version: job.data.version },

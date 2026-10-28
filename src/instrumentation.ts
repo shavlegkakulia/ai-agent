@@ -1,6 +1,6 @@
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { LangfuseSpanProcessor } from '@langfuse/otel';
-import { emailRegex, phoneRegex } from 'constant/regex';
+import { emailRegex, phoneRegex } from '../constant/regex';
 import {
   LANGFUSE_EMAIL_REDACTED,
   LANGFUSE_PHONE_REDACTED,
@@ -30,6 +30,9 @@ function maskCustomerRef(data: string) {
 
 export const langfuseSpanProcessor = new LangfuseSpanProcessor({
   mask: ({ data }) => {
+    if (typeof data !== 'string') {
+      return data;
+    }
     return data
       .replace(customerRefRegex, maskCustomerRef)
       .replace(emailRegex, LANGFUSE_EMAIL_REDACTED)
