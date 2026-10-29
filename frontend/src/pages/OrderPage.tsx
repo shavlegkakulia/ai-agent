@@ -7,6 +7,9 @@ import { queryKeys } from '../api/queryKeys';
 import { ApiError } from '../components/ApiError/ApiError';
 import { Loading } from '../components/Loading/Loading';
 import { RawJson } from '../components/RawJson/RawJson';
+import { PageHeader } from '../components/ui/PageHeader';
+import { Section } from '../components/ui/Section';
+import { StatusBadge } from '../components/ui/StatusBadge';
 import { formatDate } from '../lib/format';
 
 export function OrderPage() {
@@ -32,16 +35,18 @@ export function OrderPage() {
 
   return (
     <div className="page">
-      <p>
-        <Link to="/orders">Back to orders</Link>
-      </p>
-      <h1>Order</h1>
-      <p className="hint">GET /order/:orderId</p>
+      <PageHeader
+        title="Order"
+        hint="GET /order/:orderId"
+        backTo="/orders"
+        backLabel="Back to orders"
+      />
       {orderQuery.isPending && <Loading />}
       <ApiError error={orderQuery.error} onRetry={() => orderQuery.refetch()} />
       {orderQuery.isSuccess && !orderQuery.data && <p>Order not found.</p>}
       {orderQuery.data && (
         <>
+          <Section title="Details">
           <dl className="fields">
             <div>
               <dt>Id</dt>
@@ -49,7 +54,9 @@ export function OrderPage() {
             </div>
             <div>
               <dt>Status</dt>
-              <dd>{orderQuery.data.status}</dd>
+              <dd>
+                <StatusBadge status={orderQuery.data.status} />
+              </dd>
             </div>
             <div>
               <dt>Quantity</dt>
@@ -90,6 +97,7 @@ export function OrderPage() {
               </dd>
             </div>
           </dl>
+          </Section>
           <ApiError error={productQuery.error} />
           <RawJson data={orderQuery.data} />
         </>

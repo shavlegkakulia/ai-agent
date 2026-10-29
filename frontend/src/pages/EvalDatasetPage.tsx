@@ -5,6 +5,8 @@ import { getDocuments } from '../api/documents';
 import { queryKeys } from '../api/queryKeys';
 import { ApiError } from '../components/ApiError/ApiError';
 import { Loading } from '../components/Loading/Loading';
+import { PageHeader } from '../components/ui/PageHeader';
+import { Section } from '../components/ui/Section';
 
 export function EvalDatasetPage() {
   const documentsQuery = useQuery({
@@ -47,16 +49,16 @@ export function EvalDatasetPage() {
 
   return (
     <div className="page">
-      <h1>Eval dataset generation</h1>
-      <p className="hint">
-        POST /eval-dataset-generation with {'{ documentIds: string[] }'}. The
-        controller responds with text/csv, not JSON.
-      </p>
+      <PageHeader
+        title="Eval dataset generation"
+        hint="POST /eval-dataset-generation with { documentIds: string[] }. The controller responds with text/csv, not JSON."
+      />
       {documentsQuery.isPending && <Loading />}
       <ApiError
         error={documentsQuery.error}
         onRetry={() => documentsQuery.refetch()}
       />
+      <Section title="Generate dataset">
       <form className="form" onSubmit={onSubmit}>
         <fieldset className="checklist">
           <legend>Documents</legend>
@@ -77,9 +79,10 @@ export function EvalDatasetPage() {
             </label>
           ))}
         </fieldset>
-        <label>
-          Extra document ids
+        <label className="form-field">
+          <span className="form-label">Extra document ids</span>
           <textarea
+            className="form-control form-control-compact"
             rows={4}
             value={extraIds}
             onChange={(event) => setExtraIds(event.target.value)}
@@ -87,12 +90,13 @@ export function EvalDatasetPage() {
           />
         </label>
         {formError && <div className="api-error">{formError}</div>}
-        <div>
+        <div className="form-actions">
           <button type="submit" disabled={mutation.isPending}>
             {mutation.isPending ? 'Generating…' : 'Generate dataset'}
           </button>
         </div>
       </form>
+      </Section>
       {mutation.isPending && <Loading label="Waiting for the dataset response…" />}
       <ApiError error={mutation.error} />
       {mutation.isSuccess && (

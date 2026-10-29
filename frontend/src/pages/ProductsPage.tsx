@@ -5,6 +5,7 @@ import { queryKeys } from '../api/queryKeys';
 import { ApiError } from '../components/ApiError/ApiError';
 import { Loading } from '../components/Loading/Loading';
 import { RawJson } from '../components/RawJson/RawJson';
+import { PageHeader } from '../components/ui/PageHeader';
 
 export function ProductsPage() {
   const navigate = useNavigate();
@@ -15,8 +16,7 @@ export function ProductsPage() {
 
   return (
     <div className="page">
-      <h1>Products</h1>
-      <p className="hint">GET /product</p>
+      <PageHeader title="Products" hint="GET /product" />
       {productsQuery.isPending && <Loading />}
       <ApiError error={productsQuery.error} onRetry={() => productsQuery.refetch()} />
       {productsQuery.data && productsQuery.data.length === 0 && <p>No products.</p>}

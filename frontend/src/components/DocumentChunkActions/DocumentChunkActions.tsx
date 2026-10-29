@@ -7,6 +7,7 @@ import {
   type SplitStrategy,
 } from '../../api/types/document';
 import { ApiError } from '../ApiError/ApiError';
+import { Section } from '../ui/Section';
 
 type DocumentChunkActionsProps = {
   documentId: string;
@@ -95,61 +96,65 @@ export function DocumentChunkActions({
 
   return (
     <>
+      <Section title="Add chunk" hint="POST /chunks/:documentId">
       <form className="form" onSubmit={onCreate}>
-        <h2>Add chunk</h2>
-        <p className="hint">POST /chunks/:documentId</p>
-        <label>
-          Content
+        <label className="form-field">
+          <span className="form-label">Content</span>
           <textarea
-            rows={6}
+            className="form-control"
+            rows={8}
             value={content}
             onChange={(event) => setContent(event.target.value)}
           />
         </label>
-        <label>
-          Chunk index
+        <label className="form-field">
+          <span className="form-label">Chunk index</span>
           <input
+            className="form-control form-control-short"
             type="number"
             value={chunkIndex}
             onChange={(event) => setChunkIndex(event.target.value)}
           />
         </label>
-        <label>
-          Embedding
+        <label className="form-field">
+          <span className="form-label">Embedding</span>
           <textarea
-            rows={3}
+            className="form-control form-control-compact"
+            rows={4}
             value={embedding}
             onChange={(event) => setEmbedding(event.target.value)}
           />
+          <span className="form-help">
+            Embedding is the string stored on the chunk, such as a vector
+            literal.
+          </span>
         </label>
-        <p className="hint">
-          Embedding is the string stored on the chunk, such as a vector
-          literal.
-        </p>
         {createError && <div className="api-error">{createError}</div>}
         <ApiError error={createMutation.error} />
         {createMutation.isSuccess && <p className="success">Chunk created.</p>}
-        <div>
+        <div className="form-actions">
           <button type="submit" disabled={createMutation.isPending}>
             {createMutation.isPending ? 'Adding…' : 'Add chunk'}
           </button>
         </div>
       </form>
+      </Section>
       {hasChunks && (
+        <Section title="Rechunk" hint="POST /chunks/:documentId/rechunk">
         <form className="form" onSubmit={onRechunk}>
-          <h2>Rechunk</h2>
-          <p className="hint">POST /chunks/:documentId/rechunk</p>
-          <label>
-            Version
+          <label className="form-field">
+            <span className="form-label">Version</span>
             <input
+              className="form-control form-control-short"
               type="number"
               value={rechunkVersion}
               onChange={(event) => setRechunkVersion(event.target.value)}
             />
           </label>
-          <label>
-            Split strategy
+          <label className="form-field">
+            <span className="form-label">Split strategy</span>
             <select
+              className="form-control form-control-short"
               value={splitStrategy}
               onChange={(event) =>
                 setSplitStrategy(event.target.value as SplitStrategy)
@@ -167,12 +172,13 @@ export function DocumentChunkActions({
           {rechunkMutation.isSuccess && (
             <p className="success">Rechunk queued.</p>
           )}
-          <div>
+          <div className="form-actions">
             <button type="submit" disabled={rechunkMutation.isPending}>
               {rechunkMutation.isPending ? 'Rechunking…' : 'Rechunk'}
             </button>
           </div>
         </form>
+        </Section>
       )}
     </>
   );

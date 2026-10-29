@@ -8,6 +8,8 @@ import { ApiError } from '../components/ApiError/ApiError';
 import { DocumentChunkActions } from '../components/DocumentChunkActions/DocumentChunkActions';
 import { Loading } from '../components/Loading/Loading';
 import { RawJson } from '../components/RawJson/RawJson';
+import { PageHeader } from '../components/ui/PageHeader';
+import { Section } from '../components/ui/Section';
 import { formatDate } from '../lib/format';
 
 export function ChunksPage() {
@@ -60,16 +62,20 @@ export function ChunksPage() {
 
   return (
     <div className="page">
-      <h1>Chunks</h1>
-      <p className="hint">
-        {documentId
-          ? 'GET /chunks/:documentId'
-          : 'GET /chunks. Chunks have no title or metadata fields.'}
-      </p>
+      <PageHeader
+        title="Chunks"
+        hint={
+          documentId
+            ? 'GET /chunks/:documentId'
+            : 'GET /chunks. Chunks have no title or metadata fields.'
+        }
+      />
+      <Section title="Filter">
       <form className="toolbar" onSubmit={onSubmit}>
-        <label>
-          Document
+        <label className="form-field">
+          <span className="form-label">Document</span>
           <select
+            className="form-control"
             value={documentId}
             onChange={(event) => applyFilter(event.target.value)}
           >
@@ -81,26 +87,20 @@ export function ChunksPage() {
             ))}
           </select>
         </label>
-        <label>
-          Document id
+        <label className="form-field">
+          <span className="form-label">Document id</span>
           <input
+            className="form-control"
             value={draftDocumentId}
             onChange={(event) => setDraftDocumentId(event.target.value)}
             placeholder="Document id"
           />
         </label>
-        <button type="submit">Apply</button>
-        {documentId && (
-          <button
-            type="button"
-            className="danger"
-            onClick={onDelete}
-            disabled={deleteMutation.isPending}
-          >
-            {deleteMutation.isPending ? 'Deleting…' : 'Delete chunks'}
-          </button>
-        )}
+        <div className="form-actions">
+          <button type="submit">Apply</button>
+        </div>
       </form>
+      </Section>
       <ApiError error={documentsQuery.error} />
       {documentId && chunksQuery.data && (
         <DocumentChunkActions
@@ -116,7 +116,6 @@ export function ChunksPage() {
       {deleteMutation.isSuccess && (
         <p className="success">Deleted {deleteMutation.data.count} chunks.</p>
       )}
-      <ApiError error={deleteMutation.error} />
       {chunksQuery.isPending && <Loading />}
       <ApiError error={chunksQuery.error} onRetry={() => chunksQuery.refetch()} />
       {chunksQuery.data && chunksQuery.data.length === 0 && <p>No chunks.</p>}
@@ -145,6 +144,22 @@ export function ChunksPage() {
           </article>
         ))}
       </div>
+      {documentId && (
+        <Section title="Danger zone" danger>
+          <p className="hint">Delete every chunk for the selected document.</p>
+          <div className="form-actions">
+            <button
+              type="button"
+              className="danger"
+              onClick={onDelete}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? 'Deleting…' : 'Delete chunks'}
+            </button>
+          </div>
+          <ApiError error={deleteMutation.error} />
+        </Section>
+      )}
       {chunksQuery.data && <RawJson data={chunksQuery.data} />}
     </div>
   );

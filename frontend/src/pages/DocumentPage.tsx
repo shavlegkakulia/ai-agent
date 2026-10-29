@@ -9,6 +9,9 @@ import { DocumentChunkActions } from '../components/DocumentChunkActions/Documen
 import { DocumentForm } from '../components/DocumentForm/DocumentForm';
 import { Loading } from '../components/Loading/Loading';
 import { RawJson } from '../components/RawJson/RawJson';
+import { PageHeader } from '../components/ui/PageHeader';
+import { Section } from '../components/ui/Section';
+import { StatusBadge } from '../components/ui/StatusBadge';
 import { formatDate } from '../lib/format';
 
 export function DocumentPage() {
@@ -49,11 +52,12 @@ export function DocumentPage() {
 
   return (
     <div className="page">
-      <p>
-        <Link to="/documents">Back to documents</Link>
-      </p>
-      <h1>Document</h1>
-      <p className="hint">GET /document/:documentId</p>
+      <PageHeader
+        title="Document"
+        hint="GET /document/:documentId"
+        backTo="/documents"
+        backLabel="Back to documents"
+      />
       {documentQuery.isPending && <Loading />}
       <ApiError
         error={documentQuery.error}
@@ -62,41 +66,46 @@ export function DocumentPage() {
       {documentQuery.isSuccess && !documentQuery.data && <p>Document not found.</p>}
       {documentQuery.data && (
         <>
-          <dl className="fields">
-            <div>
-              <dt>Id</dt>
-              <dd className="mono">{documentQuery.data.id}</dd>
+          <Section title="Details">
+            <dl className="fields">
+              <div>
+                <dt>Id</dt>
+                <dd className="mono">{documentQuery.data.id}</dd>
+              </div>
+              <div>
+                <dt>Status</dt>
+                <dd>
+                  <StatusBadge status={documentQuery.data.status} />
+                </dd>
+              </div>
+              <div>
+                <dt>Version</dt>
+                <dd>{documentQuery.data.version}</dd>
+              </div>
+              <div>
+                <dt>User id</dt>
+                <dd className="mono">{documentQuery.data.userId}</dd>
+              </div>
+              <div>
+                <dt>Created</dt>
+                <dd>{formatDate(documentQuery.data.createdAt)}</dd>
+              </div>
+              <div>
+                <dt>Updated</dt>
+                <dd>{formatDate(documentQuery.data.updatedAt)}</dd>
+              </div>
+            </dl>
+          </Section>
+          <Section title="Related">
+            <div className="related-links">
+              <Link to={`/chunks?documentId=${documentQuery.data.id}`}>
+                Chunks for this document
+              </Link>
+              <Link to={`/outbox?documentId=${documentQuery.data.id}`}>
+                Outbox for this document
+              </Link>
             </div>
-            <div>
-              <dt>Status</dt>
-              <dd>{documentQuery.data.status}</dd>
-            </div>
-            <div>
-              <dt>Version</dt>
-              <dd>{documentQuery.data.version}</dd>
-            </div>
-            <div>
-              <dt>User id</dt>
-              <dd className="mono">{documentQuery.data.userId}</dd>
-            </div>
-            <div>
-              <dt>Created</dt>
-              <dd>{formatDate(documentQuery.data.createdAt)}</dd>
-            </div>
-            <div>
-              <dt>Updated</dt>
-              <dd>{formatDate(documentQuery.data.updatedAt)}</dd>
-            </div>
-          </dl>
-          <p>
-            <Link to={`/chunks?documentId=${documentQuery.data.id}`}>
-              Chunks for this document
-            </Link>
-            {' · '}
-            <Link to={`/outbox?documentId=${documentQuery.data.id}`}>
-              Outbox for this document
-            </Link>
-          </p>
+          </Section>
           {chunksQuery.isPending && <Loading label="Loading chunks…" />}
           <ApiError
             error={chunksQuery.error}
@@ -110,31 +119,34 @@ export function DocumentPage() {
               hasChunks={chunksQuery.data.length > 0}
             />
           )}
-          <h2>Edit</h2>
-          <p className="hint">PUT /document/:documentId</p>
-          <DocumentForm
-            key={`${documentQuery.data.id}-${documentQuery.data.updatedAt}`}
-            initialTitle={documentQuery.data.title}
-            initialContent={documentQuery.data.content}
-            submitLabel="Save document"
-            isSubmitting={updateMutation.isPending}
-            onSubmit={(values) => updateMutation.mutate(values)}
-          />
-          <ApiError error={updateMutation.error} />
-          {updateMutation.isSuccess && (
-            <p className="success">Saved. Returned id: {updateMutation.data}</p>
-          )}
-          <div className="toolbar">
-            <button
-              type="button"
-              className="danger"
-              onClick={onDelete}
-              disabled={deleteMutation.isPending}
-            >
-              {deleteMutation.isPending ? 'Deleting…' : 'Delete document'}
-            </button>
-          </div>
-          <ApiError error={deleteMutation.error} />
+          <Section title="Edit document" hint="PUT /document/:documentId">
+            <DocumentForm
+              key={`${documentQuery.data.id}-${documentQuery.data.updatedAt}`}
+              initialTitle={documentQuery.data.title}
+              initialContent={documentQuery.data.content}
+              submitLabel="Save document"
+              isSubmitting={updateMutation.isPending}
+              onSubmit={(values) => updateMutation.mutate(values)}
+            />
+            <ApiError error={updateMutation.error} />
+            {updateMutation.isSuccess && (
+              <p className="success">Saved. Returned id: {updateMutation.data}</p>
+            )}
+          </Section>
+          <Section title="Danger zone" danger>
+            <p className="hint">Delete this document and its related records.</p>
+            <div className="form-actions">
+              <button
+                type="button"
+                className="danger"
+                onClick={onDelete}
+                disabled={deleteMutation.isPending}
+              >
+                {deleteMutation.isPending ? 'Deleting…' : 'Delete document'}
+              </button>
+            </div>
+            <ApiError error={deleteMutation.error} />
+          </Section>
           <RawJson data={documentQuery.data} />
         </>
       )}

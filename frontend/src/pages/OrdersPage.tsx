@@ -8,6 +8,9 @@ import { queryKeys } from '../api/queryKeys';
 import { ApiError } from '../components/ApiError/ApiError';
 import { Loading } from '../components/Loading/Loading';
 import { RawJson } from '../components/RawJson/RawJson';
+import { PageHeader } from '../components/ui/PageHeader';
+import { Section } from '../components/ui/Section';
+import { StatusBadge } from '../components/ui/StatusBadge';
 import { formatDate } from '../lib/format';
 
 export function OrdersPage() {
@@ -56,16 +59,20 @@ export function OrdersPage() {
 
   return (
     <div className="page">
-      <h1>Orders</h1>
-      <p className="hint">
-        {productId
-          ? 'GET /order/by-product/:productId'
-          : 'GET /order. The order payload has customerId and productId, not nested customer or product objects.'}
-      </p>
+      <PageHeader
+        title="Orders"
+        hint={
+          productId
+            ? 'GET /order/by-product/:productId'
+            : 'GET /order. The order payload has customerId and productId, not nested customer or product objects.'
+        }
+      />
+      <Section title="Filter">
       <form className="toolbar" onSubmit={onFilterSubmit}>
-        <label>
-          Product
+        <label className="form-field">
+          <span className="form-label">Product</span>
           <select
+            className="form-control"
             value={productId}
             onChange={(event) => setProductFilter(event.target.value)}
           >
@@ -77,16 +84,20 @@ export function OrdersPage() {
             ))}
           </select>
         </label>
-        <label>
-          Product id
+        <label className="form-field">
+          <span className="form-label">Product id</span>
           <input
+            className="form-control"
             value={draftProductId}
             onChange={(event) => setDraftProductId(event.target.value)}
             placeholder="Filter by product id"
           />
         </label>
-        <button type="submit">Apply</button>
+        <div className="form-actions">
+          <button type="submit">Apply</button>
+        </div>
       </form>
+      </Section>
       <ApiError error={productsQuery.error} />
       {ordersQuery.isPending && <Loading />}
       <ApiError error={ordersQuery.error} onRetry={() => ordersQuery.refetch()} />
@@ -114,7 +125,9 @@ export function OrdersPage() {
                     className="clickable"
                     onClick={() => navigate(`/orders/${order.id}`)}
                   >
-                    <td>{order.status}</td>
+                    <td>
+                      <StatusBadge status={order.status} />
+                    </td>
                     <td>
                       {customer ? (
                         <>

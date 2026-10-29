@@ -1,6 +1,8 @@
 import { ApiError } from '../components/ApiError/ApiError';
 import { Loading } from '../components/Loading/Loading';
 import { RawJson } from '../components/RawJson/RawJson';
+import { PageHeader } from '../components/ui/PageHeader';
+import { Section } from '../components/ui/Section';
 import { useAuth } from '../auth/AuthProvider';
 
 export function ProfilePage() {
@@ -8,12 +10,12 @@ export function ProfilePage() {
 
   return (
     <div className="page">
-      <h1>Profile</h1>
-      <p className="hint">GET /user/profile</p>
+      <PageHeader title="Profile" hint="GET /user/profile" />
       {isProfileLoading && <Loading />}
       <ApiError error={profileError} onRetry={refetchProfile} />
       {profile && (
         <>
+          <Section title="Details">
           <dl className="fields">
             <div>
               <dt>Id</dt>
@@ -32,6 +34,7 @@ export function ProfilePage() {
               <dd>{profile.last_name ?? '—'}</dd>
             </div>
           </dl>
+          </Section>
           <RawJson data={profile} />
         </>
       )}

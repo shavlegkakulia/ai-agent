@@ -7,6 +7,9 @@ import { ApiError } from '../components/ApiError/ApiError';
 import { DocumentForm } from '../components/DocumentForm/DocumentForm';
 import { Loading } from '../components/Loading/Loading';
 import { RawJson } from '../components/RawJson/RawJson';
+import { PageHeader } from '../components/ui/PageHeader';
+import { Section } from '../components/ui/Section';
+import { StatusBadge } from '../components/ui/StatusBadge';
 import { formatDate } from '../lib/format';
 
 export function DocumentsPage() {
@@ -26,8 +29,7 @@ export function DocumentsPage() {
 
   return (
     <div className="page">
-      <h1>Documents</h1>
-      <p className="hint">GET /document</p>
+      <PageHeader title="Documents" hint="GET /document" />
       {documentsQuery.isPending && <Loading />}
       <ApiError
         error={documentsQuery.error}
@@ -56,7 +58,9 @@ export function DocumentsPage() {
                   onClick={() => navigate(`/documents/${document.id}`)}
                 >
                   <td>{document.title}</td>
-                  <td>{document.status}</td>
+                  <td>
+                    <StatusBadge status={document.status} />
+                  </td>
                   <td>{document.version}</td>
                   <td>{formatDate(document.updatedAt)}</td>
                   <td className="mono">{document.id}</td>
@@ -66,16 +70,15 @@ export function DocumentsPage() {
           </table>
         </div>
       )}
+      <Section title="Create document" hint="POST /document/add">
+        <DocumentForm
+          submitLabel="Create document"
+          isSubmitting={createMutation.isPending}
+          onSubmit={(values) => createMutation.mutate(values)}
+        />
+        <ApiError error={createMutation.error} />
+      </Section>
       {documentsQuery.data && <RawJson data={documentsQuery.data} />}
-
-      <h2>Create document</h2>
-      <p className="hint">POST /document/add</p>
-      <DocumentForm
-        submitLabel="Create document"
-        isSubmitting={createMutation.isPending}
-        onSubmit={(values) => createMutation.mutate(values)}
-      />
-      <ApiError error={createMutation.error} />
     </div>
   );
 }

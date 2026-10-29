@@ -5,6 +5,8 @@ import { queryKeys } from '../api/queryKeys';
 import { ApiError } from '../components/ApiError/ApiError';
 import { Loading } from '../components/Loading/Loading';
 import { RawJson } from '../components/RawJson/RawJson';
+import { PageHeader } from '../components/ui/PageHeader';
+import { Section } from '../components/ui/Section';
 
 export function ProductPage() {
   const { productId = '' } = useParams();
@@ -16,16 +18,18 @@ export function ProductPage() {
 
   return (
     <div className="page">
-      <p>
-        <Link to="/products">Back to products</Link>
-      </p>
-      <h1>Product</h1>
-      <p className="hint">GET /product/:productId</p>
+      <PageHeader
+        title="Product"
+        hint="GET /product/:productId"
+        backTo="/products"
+        backLabel="Back to products"
+      />
       {productQuery.isPending && <Loading />}
       <ApiError error={productQuery.error} onRetry={() => productQuery.refetch()} />
       {productQuery.isSuccess && !productQuery.data && <p>Product not found.</p>}
       {productQuery.data && (
         <>
+          <Section title="Details">
           <dl className="fields">
             <div>
               <dt>Id</dt>
@@ -44,11 +48,14 @@ export function ProductPage() {
               <dd>{productQuery.data.stockQuantity}</dd>
             </div>
           </dl>
-          <p>
-            <Link to={`/orders?productId=${productQuery.data.id}`}>
-              Orders for this product
-            </Link>
-          </p>
+          </Section>
+          <Section title="Related">
+            <div className="related-links">
+              <Link to={`/orders?productId=${productQuery.data.id}`}>
+                Orders for this product
+              </Link>
+            </div>
+          </Section>
           <RawJson data={productQuery.data} />
         </>
       )}

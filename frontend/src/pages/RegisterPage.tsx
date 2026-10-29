@@ -47,9 +47,10 @@ export function RegisterPage() {
           does not send one.
         </p>
         <form className="form" onSubmit={(event) => void onSubmit(event)}>
-          <label>
-            Email
+          <label className="form-field">
+            <span className="form-label">Email</span>
             <input
+              className="form-control"
               type="email"
               autoComplete="username"
               value={email}
@@ -57,25 +58,28 @@ export function RegisterPage() {
               required
             />
           </label>
-          <label>
-            Name
+          <label className="form-field">
+            <span className="form-label">Name</span>
             <input
+              className="form-control"
               value={name}
               onChange={(event) => setName(event.target.value)}
               required
             />
           </label>
-          <label>
-            Last name
+          <label className="form-field">
+            <span className="form-label">Last name</span>
             <input
+              className="form-control"
               value={lastName}
               onChange={(event) => setLastName(event.target.value)}
               required
             />
           </label>
-          <label>
-            Password
+          <label className="form-field">
+            <span className="form-label">Password</span>
             <input
+              className="form-control"
               type="password"
               autoComplete="new-password"
               value={password}
@@ -84,9 +88,11 @@ export function RegisterPage() {
             />
           </label>
           <ApiError error={error} />
-          <button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Creating account…' : 'Create account'}
-          </button>
+          <div className="form-actions">
+            <button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Creating account…' : 'Create account'}
+            </button>
+          </div>
         </form>
         <p>
           Already registered? <Link to="/login">Log in</Link>

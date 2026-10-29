@@ -40,21 +40,27 @@ export function DocumentForm({
 
   return (
     <form className="form" onSubmit={handleSubmit}>
-      <label>
-        Title
-        <input value={title} onChange={(event) => setTitle(event.target.value)} />
+      <label className="form-field">
+        <span className="form-label">Title</span>
+        <input
+          className="form-control"
+          value={title}
+          onChange={(event) => setTitle(event.target.value)}
+        />
       </label>
-      <label>
-        Content
+      <label className="form-field">
+        <span className="form-label">Content</span>
         <textarea
+          className="form-control"
           rows={12}
           value={content}
           onChange={(event) => setContent(event.target.value)}
         />
       </label>
-      <label>
-        Split strategy
+      <label className="form-field">
+        <span className="form-label">Split strategy</span>
         <select
+          className="form-control form-control-short"
           value={splitStrategy}
           onChange={(event) =>
             setSplitStrategy(event.target.value as SplitStrategy)
@@ -66,14 +72,14 @@ export function DocumentForm({
             </option>
           ))}
         </select>
+        <span className="form-help">
+          Values match the backend SplitStrategy enum: none, recursive,
+          semantic. The document record does not store the strategy, so edits
+          default to recursive unless you change it.
+        </span>
       </label>
-      <p className="hint">
-        Values match the backend SplitStrategy enum: none, recursive, semantic.
-        The document record does not store the strategy, so edits default to
-        recursive unless you change it.
-      </p>
       {formError && <div className="api-error">{formError}</div>}
-      <div>
+      <div className="form-actions">
         <button type="submit" disabled={isSubmitting}>
           {isSubmitting ? 'Saving…' : submitLabel}
         </button>

@@ -4,6 +4,7 @@ import { queryKeys } from '../api/queryKeys';
 import { ApiError } from '../components/ApiError/ApiError';
 import { Loading } from '../components/Loading/Loading';
 import { RawJson } from '../components/RawJson/RawJson';
+import { PageHeader } from '../components/ui/PageHeader';
 
 export function CustomersPage() {
   const customersQuery = useQuery({
@@ -13,8 +14,7 @@ export function CustomersPage() {
 
   return (
     <div className="page">
-      <h1>Customers</h1>
-      <p className="hint">GET /customer</p>
+      <PageHeader title="Customers" hint="GET /customer" />
       {customersQuery.isPending && <Loading />}
       <ApiError
         error={customersQuery.error}

@@ -45,9 +45,10 @@ export function LoginPage() {
         {createdMessage && <p className="success">{createdMessage}</p>}
         {notice && <p className="api-error">{notice}</p>}
         <form className="form" onSubmit={(event) => void onSubmit(event)}>
-          <label>
-            Email
+          <label className="form-field">
+            <span className="form-label">Email</span>
             <input
+              className="form-control"
               type="email"
               autoComplete="username"
               value={email}
@@ -55,9 +56,10 @@ export function LoginPage() {
               required
             />
           </label>
-          <label>
-            Password
+          <label className="form-field">
+            <span className="form-label">Password</span>
             <input
+              className="form-control"
               type="password"
               autoComplete="current-password"
               value={password}
@@ -66,9 +68,11 @@ export function LoginPage() {
             />
           </label>
           <ApiError error={error} />
-          <button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Logging in…' : 'Log in'}
-          </button>
+          <div className="form-actions">
+            <button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Logging in…' : 'Log in'}
+            </button>
+          </div>
         </form>
         <p>
           No account? <Link to="/register">Register</Link>

@@ -7,6 +7,8 @@ import { queryKeys } from '../api/queryKeys';
 import { ApiError } from '../components/ApiError/ApiError';
 import { Loading } from '../components/Loading/Loading';
 import { RawJson } from '../components/RawJson/RawJson';
+import { PageHeader } from '../components/ui/PageHeader';
+import { Section } from '../components/ui/Section';
 import { formatDate } from '../lib/format';
 
 export function OutboxPage() {
@@ -45,14 +47,16 @@ export function OutboxPage() {
 
   return (
     <div className="page">
-      <h1>Outbox</h1>
-      <p className="hint">
-        {documentId ? 'GET /outbox/:documentId' : 'GET /outbox/all'}
-      </p>
+      <PageHeader
+        title="Outbox"
+        hint={documentId ? 'GET /outbox/:documentId' : 'GET /outbox/all'}
+      />
+      <Section title="Filter">
       <form className="toolbar" onSubmit={onSubmit}>
-        <label>
-          Document
+        <label className="form-field">
+          <span className="form-label">Document</span>
           <select
+            className="form-control"
             value={documentId}
             onChange={(event) => applyFilter(event.target.value)}
           >
@@ -64,16 +68,20 @@ export function OutboxPage() {
             ))}
           </select>
         </label>
-        <label>
-          Document id
+        <label className="form-field">
+          <span className="form-label">Document id</span>
           <input
+            className="form-control"
             value={draftDocumentId}
             onChange={(event) => setDraftDocumentId(event.target.value)}
             placeholder="Document id"
           />
         </label>
-        <button type="submit">Apply</button>
+        <div className="form-actions">
+          <button type="submit">Apply</button>
+        </div>
       </form>
+      </Section>
       <ApiError error={documentsQuery.error} />
       {outboxQuery.isPending && <Loading />}
       <ApiError error={outboxQuery.error} onRetry={() => outboxQuery.refetch()} />
