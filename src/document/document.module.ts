@@ -6,6 +6,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { QueueName } from './contracts';
 import { ThorttlerModule } from '../thorttler/thorttler.module';
 import { QueryRewriterModule } from '../query-rewrite/query-rewriter.module';
+import { OutboxModule } from '../outbox/outbox.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { QueryRewriterModule } from '../query-rewrite/query-rewriter.module';
     PrismaModule,
     ThorttlerModule,
     QueryRewriterModule,
+    OutboxModule,
   ],
   controllers: [DocumentController],
   providers: [DocumentService],

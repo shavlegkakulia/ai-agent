@@ -5,6 +5,7 @@ import { deleteChunks, getChunks, getChunksForDocument } from '../api/chunks';
 import { getDocuments } from '../api/documents';
 import { queryKeys } from '../api/queryKeys';
 import { ApiError } from '../components/ApiError/ApiError';
+import { DocumentChunkActions } from '../components/DocumentChunkActions/DocumentChunkActions';
 import { Loading } from '../components/Loading/Loading';
 import { RawJson } from '../components/RawJson/RawJson';
 import { formatDate } from '../lib/format';
@@ -101,6 +102,17 @@ export function ChunksPage() {
         )}
       </form>
       <ApiError error={documentsQuery.error} />
+      {documentId && chunksQuery.data && (
+        <DocumentChunkActions
+          key={documentId}
+          documentId={documentId}
+          version={
+            documentsQuery.data?.find((document) => document.id === documentId)
+              ?.version
+          }
+          hasChunks={chunksQuery.data.length > 0}
+        />
+      )}
       {deleteMutation.isSuccess && (
         <p className="success">Deleted {deleteMutation.data.count} chunks.</p>
       )}

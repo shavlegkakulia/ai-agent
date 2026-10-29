@@ -7,6 +7,7 @@ export enum QueueName {
 export enum JobName {
   PROCESS_DOCUMENT = 'processDocument',
   UPDATE_DOCUMENT = 'updateDocument',
+  RECHUNK_DOCUMENT = 'rechunkDocument',
 }
 
 export interface DocumentProcessorData {

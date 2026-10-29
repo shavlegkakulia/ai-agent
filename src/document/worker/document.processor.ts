@@ -3,10 +3,10 @@ import { Job, UnrecoverableError } from 'bullmq';
 import { DocumentService } from '../document.service';
 import { EmbeddingService } from '../../embedding/embedding.service';
 import { DocumentStatus, PrismaClient } from '../../generated/prisma/client';
-import { randomUUID } from 'node:crypto';
 import { DocumentProcessorData, JobName, QueueName } from '../contracts';
 import { SplitStrategy } from '../../textSplitter/constant';
 import { TextSplitterService } from '../../textSplitter/text-splitter.service';
+import { ChunksService } from '../../chunks/chunks.service';
 
 @Processor(QueueName.DOCUMENT)
 export class DocumentProcessor extends WorkerHost {
@@ -15,13 +15,15 @@ export class DocumentProcessor extends WorkerHost {
     private readonly documentService: DocumentService,
     private readonly embeddingService: EmbeddingService,
     private readonly textSplitterService: TextSplitterService,
+    private readonly chunksService: ChunksService,
   ) {
     super();
   }
   async chunkDocument(
     data: DocumentProcessorData,
-    operation: 'insert' | 'update' = 'insert',
+    operation: 'insert' | 'update' | 'rechunk' = 'insert',
   ) {
+    console.log('operation', operation);
     const document = await this.documentService.getDocument(
       data.documentId,
       data.userId,
@@ -58,7 +60,7 @@ export class DocumentProcessor extends WorkerHost {
     }
 
     let splitChunks: string[] = [];
-
+    console.log('splitStrategy', data.splitStrategy);
     if (data.splitStrategy === SplitStrategy.Split) {
       splitChunks = await this.textSplitterService.splitText(document.content);
     } else if (data.splitStrategy === SplitStrategy.Semantic) {
@@ -105,7 +107,7 @@ export class DocumentProcessor extends WorkerHost {
       if (!currentDocument || currentDocument.version !== data.version) {
         return {}; // Mark as processed but do not process because stale data
       }
-      if (operation === 'update') {
+      if (operation === 'update' || operation === 'rechunk') {
         await tx.documentChunks.deleteMany({
           where: {
             documentId: data.documentId,
@@ -114,26 +116,14 @@ export class DocumentProcessor extends WorkerHost {
       }
       for (const embedding of embeddingsData) {
         const vector = `[${embedding.embedding.join(',')}]`;
-        await tx.$executeRaw`
-          INSERT INTO "DocumentChunks" (
-            "id",
-            "content",
-            "userId",
-            "documentId",
-            "chunkIndex",
-            "embedding",
-            "createdAt"
-          )
-          VALUES (
-            ${randomUUID()},
-            ${embedding.content},
-            ${data.userId},
-            ${data.documentId},
-            ${embedding.chunkIndex},
-            ${vector}::vector,
-            NOW()
-          )
-        `;
+        await this.chunksService.createChunksForDocument(
+          data.documentId,
+          data.userId,
+          embedding.content,
+          embedding.chunkIndex,
+          vector,
+          tx,
+        );
       }
       await tx.documents.update({
         where: { id: data.documentId, version: data.version },
@@ -148,11 +138,13 @@ export class DocumentProcessor extends WorkerHost {
   count = 0;
   async process(job: Job<DocumentProcessorData, unknown, string>) {
     const { data, name } = job;
-
+    console.log('name', name);
     if (name === JobName.PROCESS_DOCUMENT) {
       return this.chunkDocument(data);
     } else if (name === JobName.UPDATE_DOCUMENT) {
       return this.chunkDocument(data, 'update');
+    } else if (name === JobName.RECHUNK_DOCUMENT) {
+      return this.chunkDocument(data, 'rechunk');
     } else {
       throw new Error(`Invalid job name: ${name}`);
     }
@@ -164,6 +156,7 @@ export class DocumentProcessor extends WorkerHost {
   ) {
     const isUnrecoverable = error instanceof UnrecoverableError;
     const maxAttempts = job.opts.attempts ?? 1;
+    console.log('error', error);
     if (job.attemptsMade >= maxAttempts || isUnrecoverable) {
       await this.prisma.documents.updateMany({
         where: { id: job.data.documentId, version: job.data.version },

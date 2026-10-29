@@ -77,6 +77,14 @@ export class OutboxPublisher
               type: 'exponential',
               delay: 1000,
             },
+            removeOnComplete: {
+              age: 3600,
+              count: 1000,
+            },
+            removeOnFail: {
+              age: 24 * 3600,
+              count: 5000,
+            },
           });
 
           await this.prisma.outboxEvents.updateMany({

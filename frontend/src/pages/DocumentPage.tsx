@@ -1,9 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { getChunksForDocument } from '../api/chunks';
 import { deleteDocument, getDocument, updateDocument } from '../api/documents';
 import { queryKeys } from '../api/queryKeys';
 import type { DocumentWriteRequest } from '../api/types/document';
 import { ApiError } from '../components/ApiError/ApiError';
+import { DocumentChunkActions } from '../components/DocumentChunkActions/DocumentChunkActions';
 import { DocumentForm } from '../components/DocumentForm/DocumentForm';
 import { Loading } from '../components/Loading/Loading';
 import { RawJson } from '../components/RawJson/RawJson';
@@ -17,6 +19,11 @@ export function DocumentPage() {
     queryKey: queryKeys.document(documentId),
     queryFn: () => getDocument(documentId),
     enabled: Boolean(documentId),
+  });
+  const chunksQuery = useQuery({
+    queryKey: queryKeys.chunksByDocument(documentId),
+    queryFn: () => getChunksForDocument(documentId),
+    enabled: Boolean(documentId) && Boolean(documentQuery.data),
   });
   const updateMutation = useMutation({
     mutationFn: (body: DocumentWriteRequest) => updateDocument(documentId, body),
@@ -90,6 +97,19 @@ export function DocumentPage() {
               Outbox for this document
             </Link>
           </p>
+          {chunksQuery.isPending && <Loading label="Loading chunks…" />}
+          <ApiError
+            error={chunksQuery.error}
+            onRetry={() => chunksQuery.refetch()}
+          />
+          {chunksQuery.data && (
+            <DocumentChunkActions
+              key={`${documentQuery.data.id}-${documentQuery.data.version}`}
+              documentId={documentQuery.data.id}
+              version={documentQuery.data.version}
+              hasChunks={chunksQuery.data.length > 0}
+            />
+          )}
           <h2>Edit</h2>
           <p className="hint">PUT /document/:documentId</p>
           <DocumentForm

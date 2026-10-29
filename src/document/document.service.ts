@@ -4,6 +4,7 @@ import { JobName } from './contracts';
 import { SplitStrategy } from '../textSplitter/constant';
 import { buildFtsQuery } from '../helper/factory';
 import { QueryRewriterService } from '../query-rewrite/query-rewriter.service';
+import { OutboxService } from '../outbox/outbox.service';
 
 const goldenDistanceThreshold = 0.7;
 
@@ -12,6 +13,7 @@ export class DocumentService {
   constructor(
     private readonly prisma: PrismaClient,
     private readonly queryRewriterService: QueryRewriterService,
+    private readonly outboxService: OutboxService,
   ) {}
 
   getDocument(documentId: string, userId: string) {
@@ -57,18 +59,18 @@ export class DocumentService {
           version: true,
         },
       });
-      await tx.outboxEvents.create({
-        data: {
-          type: JobName.PROCESS_DOCUMENT,
-          aggregateId: document.id,
-          payload: {
-            userId: userId,
-            documentId: document.id,
-            version: document.version,
-            splitStrategy,
-          },
+
+      await this.outboxService.addEvent(
+        JobName.PROCESS_DOCUMENT,
+        document.id,
+        {
+          userId: userId,
+          documentId: document.id,
+          version: document.version,
+          splitStrategy,
         },
-      });
+        tx,
+      );
       return document;
     });
   }
@@ -95,18 +97,18 @@ export class DocumentService {
           userId,
         },
       });
-      await tx.outboxEvents.create({
-        data: {
-          type: JobName.UPDATE_DOCUMENT,
-          aggregateId: document.id,
-          payload: {
-            userId: userId,
-            documentId: document.id,
-            version: document.version,
-            splitStrategy,
-          },
+      await this.outboxService.addEvent(
+        JobName.UPDATE_DOCUMENT,
+        document.id,
+        {
+          userId: userId,
+          documentId: document.id,
+          version: document.version,
+          splitStrategy,
         },
-      });
+        tx,
+      );
+
       return document;
     });
   }

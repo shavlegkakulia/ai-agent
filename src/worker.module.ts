@@ -7,6 +7,7 @@ import { EmbeddingModule } from './embedding/embedding.module';
 import { QueueName } from './document/contracts';
 import { OutboxPublisher } from './document/worker/outbox-publisher';
 import { TextSplitterModule } from './textSplitter/text-splitter.module';
+import { ChunksModule } from './chunks/chunks.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { TextSplitterModule } from './textSplitter/text-splitter.module';
     DocumentModule,
     EmbeddingModule,
     TextSplitterModule,
+    ChunksModule,
   ],
   providers: [DocumentProcessor, OutboxPublisher],
 })
